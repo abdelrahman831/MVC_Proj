@@ -1,0 +1,114 @@
+﻿@model IEnumerable<DepartmentToReturnDto>
+@{
+    ViewData["Title"] = "Index";
+    // View data ==> Enforce type - strongly type
+    //View Bag ==> 4.0 Can not enforce type safety -weakly Type
+    string? viewDataMsg = ViewData["Message"] as string;  // [compilation time]
+
+    string? viewBagMsg = ViewBag.Message;  // [Clr]
+                                           // performance ==>ViewData ==>Type compilation time (Recommended)
+    //Readability ==>ViewBag
+}
+
+@* <div class="alert alert-info">
+    @ViewData["Message"]
+
+</div> *@
+@if (!string.IsNullOrEmpty(TempData["Message"] as string))
+{
+    <div aria-live="polite" aria-atomic="true" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050;">
+        <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <img src="~/img/checkmark.png" class="rounded me-2" alt="Success Icon" width="20" height="20">
+                <strong class="me-auto text-primary">Success!!</strong>
+                <small class="text-body-secondary">@DateTime.Now.ToString("hh:mm tt")</small>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body align-items-center">
+                @TempData["Message"]
+            </div>
+        </div>
+    </div>
+
+}
+
+<h1 class="my-4 w-50 mx-auto text-center fw-bold border-bottom pb-3">All Departments</h1>
+<br />
+
+<div class="d-flex justify-content-center mb-3">
+    <a class="btn btn-lg text-white px-4"
+       style="   background: linear-gradient(to right, #5c6bc0, #283593);"
+       asp-controller="Department" asp-action="Create">
+        <i class="bi bi-person-plus-fill"></i> Create New Department
+    </a>
+</div>
+
+@if (Model.Count() > 0)
+{
+    <table class="table table-striped table-hover mt-3">
+        <thead class=" text-center">
+            <tr>
+                <th>@Html.DisplayNameFor(d => d.Code)</th>
+                @* <th>Code</th> *@
+                <th>@Html.DisplayNameFor(d => d.Name)</th>
+                @*  <th>Name</th> *@
+                <th>Creation Date</th>
+                <th>Details</th>
+                <th>Update</th>
+                <th>Delete</th>
+
+            </tr>
+
+        </thead>
+        <tbody class=" text-center">
+            @foreach (var department in Model)
+            {
+                <tr>
+                    <td>@department.Code</td>
+                    <td>@department.Name</td>
+                    <td>@department.CreationDate</td>
+                    <partial name="_ButtonsPartial" model="@department.Id" />
+                </tr>
+                <!-- Button trigger modal -->
+                <!-- Modal -->
+                <div class="modal fade" id="deleteModal-@department.Id" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h1 class="modal-title fs-5" id="exampleModalLabel">Delete Operation</h1>
+
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                Are you sure you want to delete the department @department.Name?
+                            </div>
+                            <div class="modal-footer">
+                                <form asp-action="Delete" asp-route-id="@department.Id" class="mt-4">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                    <input type="submit" value="Delete" class="btn btn-danger" />
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+            }
+        </tbody>
+
+
+    </table>
+}
+else
+{
+    <div class="alert alert-info mt-3">
+
+
+        <h1 class=" text-center">No Department Found !!</h1>
+    </div>
+
+
+}
+
+
+

@@ -1,0 +1,14 @@
+﻿@model EmployeeViewModel
+@{
+    ViewData["Title"] = "Create";
+    ViewBag.Action = "Create";
+}
+
+<div class="container mt-4">
+    <h1 class="my-4 w-50 mx-auto text-center fw-bold border-bottom pb-3">Create New Employee</h1>
+    <partial name="Partials/CreateEditEmployeePartial" />
+
+</div>
+@section ValidationScripts {
+    <partial name="_ValidationScriptsPartial" />
+}

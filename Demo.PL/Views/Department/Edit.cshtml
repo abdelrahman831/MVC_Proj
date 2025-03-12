@@ -1,0 +1,17 @@
+﻿@model DepartmentViewModel
+ 
+@{
+    ViewData["Title"] = "Edit";
+    ViewBag.Action = "Edit";
+}
+
+<div class= "row justify-content-center align-content-center mt-3">
+    <h1 class="my-4 w-50 mx-auto text-center fw-bold border-bottom pb-3">Edit Department</h1>
+    <partial name="Partials/CreateEditDepartmentPartial" />
+
+</div>
+
+
+@section ValidationScripts {
+    <partial name="_ValidationScriptsPartial" />
+}
