@@ -14,9 +14,9 @@ namespace Demo.DAL.Presistance.Repositories.Generic
         IEnumerable<T> GetAllEnumerble();
 
         T? GetById(int Id);
-        int AddT(T entity);
-        int UpdateT(T entity);
-        int DeleteT(T entity);
+        void AddT(T entity);
+        void UpdateT(T entity);
+        void DeleteT(T entity);
 
     }
 }

@@ -1,4 +1,5 @@
-﻿using Demo.BLL.DTOS.Departments;
+﻿using AutoMapper;
+using Demo.BLL.DTOS.Departments;
 using Demo.BLL.Services.Departments;
 using Demo.PL.ViewModels.Department;
 using Microsoft.AspNetCore.Mvc;
@@ -25,12 +26,13 @@ namespace Demo.PL.Controllers
         private readonly IDepartmentService _departmentService;
         private readonly ILogger<DepartmentController> _logger;
         private readonly IWebHostEnvironment _environment;
-
-        public DepartmentController(IDepartmentService departmentService, ILogger<DepartmentController> logger, IWebHostEnvironment environment)
+        private readonly IMapper _mapper;
+        public DepartmentController(IDepartmentService departmentService, ILogger<DepartmentController> logger, IWebHostEnvironment environment,IMapper mapper)
         {
             _departmentService = departmentService;
             _logger = logger;
             _environment = environment;
+            _mapper = mapper;
         }
         #endregion
 
@@ -66,14 +68,14 @@ namespace Demo.PL.Controllers
             var message = string.Empty;
             try
             {
-                var Result = _departmentService.CreateDepartment(new DepartmentToCreateDto()  //new
-                {
-                    Code = departmentVM.Code,
-                    CreationDate = departmentVM.CreationDate,
-                    Description = departmentVM.Description,
-                    Name = departmentVM.Name
+                var Result = _departmentService.CreateDepartment(_mapper.Map<DepartmentToCreateDto>(departmentVM) ); //new
+                //{
+                //    Code = departmentVM.Code,
+                //    CreationDate = departmentVM.CreationDate,
+                //    Description = departmentVM.Description,
+                //    Name = departmentVM.Name
 
-                });
+                //});
                 if (Result > 0) 
                 {
                     TempData["Message"] = "Congratolations! , Department is created";
@@ -140,15 +142,15 @@ namespace Demo.PL.Controllers
             {
                 return NotFound();
             }
-            return View(new DepartmentViewModel()
-            {
-                Code = department.Code,
-                CreationDate = department.CreationDate,
-                Description = department.Description,
-                Name = department.Name
+            return View(_mapper.Map<DepartmentViewModel>(department));
+            //{
+            //    Code = department.Code,
+            //    CreationDate = department.CreationDate,
+            //    Description = department.Description,
+            //    Name = department.Name
 
 
-            });
+            //});
         }
         
 
@@ -156,7 +158,7 @@ namespace Demo.PL.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken] //Action Filter
 
-        public IActionResult Edit(int id, DepartmentViewModel departmentViewModel)
+        public IActionResult Edit(DepartmentViewModel departmentViewModel)
         {
             if (!ModelState.IsValid)
             {
@@ -165,14 +167,14 @@ namespace Demo.PL.Controllers
             var message = string.Empty;
             try
             {
-                var Result = _departmentService.UpdateDepartment(new DepartmentToUpdateDto()
-                {
-                    Id = id,
-                    Code = departmentViewModel.Code,
-                    CreationDate = departmentViewModel.CreationDate,
-                    Description = departmentViewModel.Description,
-                    Name = departmentViewModel.Name
-                });
+                var Result = _departmentService.UpdateDepartment(_mapper.Map<DepartmentToUpdateDto>(departmentViewModel));
+                //{
+                //    Id = id,
+                //    Code = departmentViewModel.Code,
+                //    CreationDate = departmentViewModel.CreationDate,
+                //    Description = departmentViewModel.Description,
+                //    Name = departmentViewModel.Name
+                //});
                 if (Result > 0)
                 {
                     TempData["Message"] = "Congratolations! , Department is Updated";

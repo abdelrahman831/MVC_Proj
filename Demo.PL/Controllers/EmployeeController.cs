@@ -146,29 +146,30 @@ namespace Demo.PL.Controllers
             {
                 return NotFound();
             }
-            return View(new EmployeeViewModel()
-            {
+            
+            return View(_mapper.Map<EmployeeViewModel>(employee));
+        //    {
              
-                EmployeeType = Enum.TryParse<EmployeeType>(employee.EmployeeType, out var empType) ? empType : default,
-                Gender = Enum.TryParse<Gender>(employee.Gender, out var gender) ? gender : default,
-                Name = employee.Name,
-                Address = employee.Address,
-                Email = employee.Email,
-                Age = employee.Age,
-                IsActive = employee.IsActive,
-                PhoneNumber = employee.PhoneNumber,
-                HiringDate = employee.HiringDate,
-                Salary = employee.Salary,
-                DepartmentId=employee.DepartmentId
+        //        EmployeeType = Enum.TryParse<EmployeeType>(employee.EmployeeType, out var empType) ? empType : default,
+        //        Gender = Enum.TryParse<Gender>(employee.Gender, out var gender) ? gender : default,
+        //        Name = employee.Name,
+        //        Address = employee.Address,
+        //        Email = employee.Email,
+        //        Age = employee.Age,
+        //        IsActive = employee.IsActive,
+        //        PhoneNumber = employee.PhoneNumber,
+        //        HiringDate = employee.HiringDate,
+        //        Salary = employee.Salary,
+        //        DepartmentId=employee.DepartmentId
                
             
-            });
+        //    });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken] //Action Filter
 
-        public IActionResult Edit(int id, EmployeeViewModel employeeVM)
+        public IActionResult Edit(EmployeeViewModel employeeVM)
         {
             if (!ModelState.IsValid)
             {
@@ -178,22 +179,22 @@ namespace Demo.PL.Controllers
             var message = string.Empty;
             try
             {
-                var Result = _employeeService.UpdateEmployee(new EmployeeToUpdateDto()
-                {
-                    Id = id,
-                    Name = employeeVM.Name,
-                    Age = employeeVM.Age,
-                    Address = employeeVM.Address,
-                    Salary = employeeVM.Salary,
-                    PhoneNumber = employeeVM.PhoneNumber,
-                    IsActive = employeeVM.IsActive,
-                    Email = employeeVM.Email,
-                    HiringDate = employeeVM.HiringDate,
-                    Gender = employeeVM.Gender,
-                    EmployeeType = employeeVM.EmployeeType,
-                    DepartmentId = employeeVM.DepartmentId
+                var Result = _employeeService.UpdateEmployee(_mapper.Map<EmployeeToUpdateDto>(employeeVM));
+                //{
+                //    Id = id,
+                //    Name = employeeVM.Name,
+                //    Age = employeeVM.Age,
+                //    Address = employeeVM.Address,
+                //    Salary = employeeVM.Salary,
+                //    PhoneNumber = employeeVM.PhoneNumber,
+                //    IsActive = employeeVM.IsActive,
+                //    Email = employeeVM.Email,
+                //    HiringDate = employeeVM.HiringDate,
+                //    Gender = employeeVM.Gender,
+                //    EmployeeType = employeeVM.EmployeeType,
+                //    DepartmentId = employeeVM.DepartmentId
 
-                });
+                //});
                 if (Result > 0)
                 {
                     TempData["Message"] = "Congratolations! , Employee is Updated";

@@ -11,10 +11,15 @@ namespace Demo.PL.Mapping.Profiles
         {
 
             CreateMap<EmployeeViewModel, EmployeeToCreateDto>();
+            CreateMap<EmployeeViewModel, EmployeeToUpdateDto>();
+
 
 
 
             CreateMap<EmployeeToCreateDto, Employee>();
+
+            CreateMap<EmployeeDetailsDto, EmployeeViewModel>();
+
 
         }
 

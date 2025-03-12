@@ -6,5 +6,6 @@
         public string? Description { get; set; }
         public string Code { get; set; } = null!;
         public DateOnly CreationDate { get; set; }
+        public int Id { get; set; }
     }
 }

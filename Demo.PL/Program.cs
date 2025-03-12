@@ -11,6 +11,10 @@ using Demo.PL.Mapping.Profiles;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Demo.DAL.Presistance.UnitOfWork;
+using Demo.PL.Mapping.Profiles.Departments;
+using Demo.BLL.Mapping.Profiles.Employees;
+using Demo.BLL.Mapping.Profiles.Departments;
 namespace Demo.PL
 {
     public class Program
@@ -29,14 +33,24 @@ namespace Demo.PL
                 //  options.UseSqlServer(builder.Configuration.GetSection("ConnectionStrings")["DefaultConnection"]);  //old Way
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));  //New Way
 
-            });
-            builder.Services.AddScoped<IDepartmentRepository, DepartmentRepository>();
-            builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
+            },ServiceLifetime.Scoped);
+            //builder.Services.AddScoped<IDepartmentRepository, DepartmentRepository>();
+            builder.Services.AddScoped<IUnitOfWork,UnitOfWork>();
+            //builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 
             builder.Services.AddScoped<IDepartmentService, DepartmentService>();
             builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 
             builder.Services.AddAutoMapper(M => M.AddProfile(new ViemodelMappingProfiles()));
+            builder.Services.AddAutoMapper(M => M.AddProfile(new DepartmentVieModelMappingProfiles()));
+
+            builder.Services.AddAutoMapper(typeof(EmployeeProfile));
+            builder.Services.AddAutoMapper(typeof(DepartmentServiceMapping));
+
+            
+
+
+
 
 
             Log.Logger = new LoggerConfiguration().WriteTo.File("logs/app-log.txt", rollingInterval: RollingInterval.Day)

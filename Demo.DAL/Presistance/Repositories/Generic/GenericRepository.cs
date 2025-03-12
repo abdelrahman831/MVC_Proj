@@ -34,24 +34,23 @@ namespace Demo.DAL.Presistance.Repositories.Generic
             //   return _dbContext.Ts.Local.FirstOrDefault(D => D.Id == Id); Old
             return _dbContext.Set<T>().Find(Id);  //Search localy in case "Found" ==>Return - In Case "NotFound" ==>will send to database to get it
         }
-        public int AddT(T entity)
+        public void AddT(T entity)
         {
             _dbContext.Set<T>().Add(entity);  //Saved localy
-            return _dbContext.SaveChanges();       //Apply localy
 
         }
-        public int UpdateT(T entity)
+        public void UpdateT(T entity)
         {
             _dbContext.Set<T>().Update(entity);  //Modified
-            return _dbContext.SaveChanges(); //unchanged
+//unchanged
         }
-        public int DeleteT(T entity)
+        public void DeleteT(T entity)
         {
             //_dbContext.Set<T>().Remove(entity);  //Modified
             //return _dbContext.SaveChanges(); //unchanged
             entity.IsDeleted = true;
             _dbContext.Set<T>().Update(entity);
-            return _dbContext.SaveChanges();
+
         }
 
         public IQueryable<T> GetAllQuarable()

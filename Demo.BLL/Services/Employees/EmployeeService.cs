@@ -13,6 +13,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Serilog;
+using Demo.DAL.Presistance.UnitOfWork;
 
 namespace Demo.BLL.Services.Employees
 {
@@ -20,14 +21,16 @@ namespace Demo.BLL.Services.Employees
     {
 
         public IEmployeeRepository _employeeRepository;
+        public IUnitOfWork _unitOfWork;
         public IMapper _mapper;
         public ILogger<EmployeeService> _logger;
 
-        public EmployeeService(ILogger<EmployeeService> logger,IEmployeeRepository employeeRepository,IMapper mapper) //Ask Clr to Create instance
+        public EmployeeService(ILogger<EmployeeService> logger,IMapper mapper,IUnitOfWork unitOfWork) //Ask Clr to Create instance
         {
-            _employeeRepository = employeeRepository;
+    
             _mapper = mapper;
             _logger = logger;
+            _unitOfWork = unitOfWork;
         }
 
         #region Create
@@ -39,30 +42,33 @@ namespace Demo.BLL.Services.Employees
                 //var employeet = _mapper.Map<Employee>(employeeCreateDto);
                 //Log.Information("Entità mappata: {@Employee}", employeet);
 
-            
-            Employee employee = new Employee()
-            {
-                Name = employeeCreateDto.Name,
-                Age = employeeCreateDto.Age,
-                Address = employeeCreateDto.Address,
-                Salary = employeeCreateDto.Salary,
-                PhoneNumber = employeeCreateDto.PhoneNumber,
-                IsActive = employeeCreateDto.IsActive,
-                Email = employeeCreateDto.Email,
-                HiringDate = employeeCreateDto.HiringDate,
-                Gender = employeeCreateDto.Gender,
-                EmployeeType = employeeCreateDto.EmployeeType,
-                CreatedBy = 1,
-                LastModifiedBy = 1,
-                LastModifiedOn = DateTime.UtcNow,
-                DepartmentId = employeeCreateDto.DepartmentId
-            };
 
-            //employee.CreatedBy = 1;
-            //employee.LastModifiedBy = 1;
-            //employee.LastModifiedOn = DateTime.UtcNow;
+                var employee = _mapper.Map<Employee>(employeeCreateDto);
+            //Employee employee = new Employee()
+            ////{
+            //    Name = employeeCreateDto.Name,
+            //    Age = employeeCreateDto.Age,
+            //    Address = employeeCreateDto.Address,
+            //    Salary = employeeCreateDto.Salary,
+            //    PhoneNumber = employeeCreateDto.PhoneNumber,
+            //    IsActive = employeeCreateDto.IsActive,
+            //    Email = employeeCreateDto.Email,
+            //    HiringDate = employeeCreateDto.HiringDate,
+            //    Gender = employeeCreateDto.Gender,
+            //    EmployeeType = employeeCreateDto.EmployeeType,
+            //    CreatedBy = 1,
+            //    LastModifiedBy = 1,
+            //    LastModifiedOn = DateTime.UtcNow,
+            //    DepartmentId = employeeCreateDto.DepartmentId
+            //};
 
-            return _employeeRepository.AddT(employee);  //Number of rows affected
+                //employee.CreatedBy = 1;
+                //employee.LastModifiedBy = 1;
+                //employee.LastModifiedOn = DateTime.UtcNow;
+
+                _unitOfWork.EmployeeRepository.AddT(employee);//Number of rows affected
+            return _unitOfWork.Complete();
+
             }
             catch (Exception ex)
             {
@@ -76,11 +82,10 @@ namespace Demo.BLL.Services.Employees
         #region Delete
         public bool DeleteEmployee(int id)
         {
-            var employee = _employeeRepository.GetById(id);
+            var employee = _unitOfWork.EmployeeRepository.GetById(id);
             if (employee is not null)
-
-                return _employeeRepository.DeleteT(employee) > 0;  //Number of rows affected >0 return true
-            return false;
+                _unitOfWork.EmployeeRepository.DeleteT(employee);
+            return _unitOfWork.Complete() >0;
 
         }
         #endregion
@@ -88,55 +93,21 @@ namespace Demo.BLL.Services.Employees
         #region Index
         public IEnumerable<EmployeeToReturnDto> GetAllEmployees()
         {
-           return _employeeRepository.GetAllQuarable().Include(E => E.Department)
-                .Where(E => !E.IsDeleted)
-                .Select(employee => new EmployeeToReturnDto
-            {
-                Id = employee.Id,
-                Name = employee.Name,
-                Age = employee.Age,
-                Salary = employee.Salary,
-                IsActive = employee.IsActive,
-                Email = employee.Email,
-                Gender = employee.Gender.ToString(),
-                EmployeeType = employee.EmployeeType.ToString(),
-                Department=employee.Department.Name  //Use Lazy loading
+            return _unitOfWork.EmployeeRepository.GetAllQuarable().Include(E => E.Department)
+                 .Where(E => !E.IsDeleted)
+                 .Select(employee => _mapper.Map<EmployeeToReturnDto>(employee));
 
-            });
-
-
-            //var employees = query.ToList();
-            //var count = query.Count();
-            //var firstEmployee = query.FirstOrDefault();
-            //return query;
         } 
         #endregion
 
         #region Details
         public EmployeeDetailsDto? GetEmployeesById(int id)
         {
-            var employee = _employeeRepository.GetById(id);
+            var employee = _unitOfWork.EmployeeRepository.GetById(id);  
             if (employee is not null)
             {
-                return new EmployeeDetailsDto
-                {
-                    Id = employee.Id,
-                    Name = employee.Name,
-                    Age = employee.Age,
-                    Salary = employee.Salary,
-                    IsActive = employee.IsActive,
-                    Email = employee.Email,
-                    PhoneNumber = employee.PhoneNumber,
-                    Address = employee.Address,
-                    HiringDate = employee.HiringDate,
-                    Gender = employee.Gender.ToString(),
-                    EmployeeType = employee.EmployeeType.ToString(),
-                    CreatedBy = employee.CreatedBy,
-                    CreatedOn = employee.CreatedOn,
-                    LastModifiedBy = employee.LastModifiedBy,
-                    
-                    DepartmentId=employee.DepartmentId// Lazy
-                };
+                return _mapper.Map<EmployeeDetailsDto>(employee);
+      
 
             }
             return null!;
@@ -146,26 +117,10 @@ namespace Demo.BLL.Services.Employees
         #region Update
         public int UpdateEmployee(EmployeeToUpdateDto employeeUpdateDto)
         {
+            var employye = _mapper.Map<Employee>(employeeUpdateDto);
 
-            Employee employee = new Employee()
-            {
-                Id = employeeUpdateDto.Id,
-                Name = employeeUpdateDto.Name,
-                Age = employeeUpdateDto.Age,
-                Address = employeeUpdateDto.Address,
-                Salary = employeeUpdateDto.Salary,
-                PhoneNumber = employeeUpdateDto.PhoneNumber,
-                IsActive = employeeUpdateDto.IsActive,
-                Email = employeeUpdateDto.Email,
-                HiringDate = employeeUpdateDto.HiringDate,
-                Gender = employeeUpdateDto.Gender,
-                EmployeeType = employeeUpdateDto.EmployeeType,
-                CreatedBy = 1,
-                LastModifiedBy = 1,
-                LastModifiedOn = DateTime.UtcNow,
-                DepartmentId = employeeUpdateDto.DepartmentId 
-            };
-            return _employeeRepository.UpdateT(employee);
+             _unitOfWork.EmployeeRepository.UpdateT(employye);
+            return _unitOfWork.Complete();
         }
         #endregion
     }
