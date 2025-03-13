@@ -3,271 +3,164 @@ using Demo.BLL.DTOS.Departments;
 using Demo.BLL.Services.Departments;
 using Demo.PL.ViewModels.Department;
 using Microsoft.AspNetCore.Mvc;
+using Serilog;
 
 namespace Demo.PL.Controllers
 {
     public class DepartmentController : Controller
     {
-        //Action ==> Master Action
-
-        //ViewStorage ==> ViewData , ViewBag ==>Deal with the same storage
-        //Dictionary
-        //Extra data
-
-        // 1] Send data from action in controller to view
-        // 2] Send data from view to partial view
-        // 3] Send data from view to layout
-
-        //View data ==> .net 3.5
-        //ViewBag ==> .net 4.0
-        //Tempdata ==> Send data from request to another request ==> From Action to another Action
-
-        #region Service //DependancyInjection 
         private readonly IDepartmentService _departmentService;
-        private readonly ILogger<DepartmentController> _logger;
-        private readonly IWebHostEnvironment _environment;
         private readonly IMapper _mapper;
-        public DepartmentController(IDepartmentService departmentService, ILogger<DepartmentController> logger, IWebHostEnvironment environment,IMapper mapper)
+        private readonly Serilog.ILogger _logger;
+        private readonly IWebHostEnvironment _environment;
+
+        public DepartmentController(IDepartmentService departmentService, IMapper mapper, IWebHostEnvironment environment)
         {
             _departmentService = departmentService;
-            _logger = logger;
-            _environment = environment;
             _mapper = mapper;
+            _logger = Log.ForContext<DepartmentController>();
+            _environment = environment;
         }
-        #endregion
 
-        #region Index
-     
-        
-        [HttpGet] //As Default
+        [HttpGet]
         public IActionResult Index()
         {
-        //ViewData["Message"] = "Hello in Departments From View Data!";
-        //ViewBag.Message= "Hello in Departments From View Bag!";
-
+            _logger.Information("Fetching all departments");
             var departments = _departmentService.GetAllDepartments();
             return View(departments);
-        } 
-        #endregion
-
-        #region Create
-        [HttpGet]
-        //show the form
-        public IActionResult Create()
-        {
-            return View();
         }
-        [HttpPost]
-        [ValidateAntiForgeryToken] //Action Filter
 
-        public IActionResult Create(DepartmentViewModel departmentVM)  //new
+        [HttpGet]
+        public IActionResult Create() => View();
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Create(DepartmentViewModel departmentVM)
         {
             if (!ModelState.IsValid)
-
+            {
+                _logger.Warning("Invalid model state for DepartmentViewModel: {@DepartmentVM}", departmentVM);
                 return View(departmentVM);
-            var message = string.Empty;
+            }
+
             try
             {
-                var Result = _departmentService.CreateDepartment(_mapper.Map<DepartmentToCreateDto>(departmentVM) ); //new
-                //{
-                //    Code = departmentVM.Code,
-                //    CreationDate = departmentVM.CreationDate,
-                //    Description = departmentVM.Description,
-                //    Name = departmentVM.Name
+                _logger.Information("Creating new department: {@DepartmentVM}", departmentVM);
+                var result = _departmentService.CreateDepartment(_mapper.Map<DepartmentToCreateDto>(departmentVM));
 
-                //});
-                if (Result > 0) 
+                if (result > 0)
                 {
-                    TempData["Message"] = "Congratolations! , Department is created";
+                    TempData["Message"] = "Department created successfully!";
                     return RedirectToAction("Index");
                 }
-                else
-                {
-                    message = "Department is not created";
-                    TempData["Message"] = message;
 
-                    ModelState.AddModelError(string.Empty, message);
-                    return View(departmentVM);
-                }
-
+                _logger.Warning("Failed to create department: {@DepartmentVM}", departmentVM);
+                ModelState.AddModelError(string.Empty, "Failed to create department.");
+                return View(departmentVM);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, ex.Message);
-                if (_environment.IsDevelopment())
-                {
-                    message = ex.Message;
-                    return View(departmentVM);
-                }
-                else
-                {
-                    message = "An error occurred while creating the department";
-                    return View("Error", message);
-
-
-                }
-
+                _logger.Error(ex, "Error creating department: {@DepartmentVM}", departmentVM);
+                return View("Error", "An error occurred while creating the department.");
             }
         }
-        #endregion
 
-        #region Details
         [HttpGet]
         public IActionResult Details(int? id)
         {
-            if (id is null)
-            {
+            if (!id.HasValue)
                 return BadRequest();
-            }
+
+            _logger.Information("Fetching details for department ID: {Id}", id);
             var department = _departmentService.GetDepartmentsById(id.Value);
-            if (department is null)
-            {
-                return NotFound();
-            }
-            return View(department);
-
+            return department == null ? NotFound() : View(department);
         }
-        #endregion
 
-        #region Update
         [HttpGet]
         public IActionResult Edit(int? id)
         {
-            if (id is null)
-            {
+            if (!id.HasValue)
                 return BadRequest();
-            }
-            var department = _departmentService.GetDepartmentsById(id.Value);
-            if (department is null)
+
+            try
             {
-                return NotFound();
+                _logger.Information("Fetching department for edit: ID {Id}", id);
+                var department = _departmentService.GetDepartmentsById(id.Value);
+                return department == null ? NotFound() : View(_mapper.Map<DepartmentViewModel>(department));
             }
-            return View(_mapper.Map<DepartmentViewModel>(department));
-            //{
-            //    Code = department.Code,
-            //    CreationDate = department.CreationDate,
-            //    Description = department.Description,
-            //    Name = department.Name
-
-
-            //});
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Error fetching department for edit: ID {Id}", id);
+                return RedirectToAction("Index");
+            }
         }
-        
 
-        
         [HttpPost]
-        [ValidateAntiForgeryToken] //Action Filter
-
-        public IActionResult Edit(DepartmentViewModel departmentViewModel)
+        [ValidateAntiForgeryToken]
+        public IActionResult Edit(DepartmentViewModel departmentVM)
         {
             if (!ModelState.IsValid)
             {
-                return View(departmentViewModel);
+                _logger.Warning("Invalid model state for updating DepartmentViewModel: {@DepartmentVM}", departmentVM);
+                return View(departmentVM);
             }
-            var message = string.Empty;
+
             try
             {
-                var Result = _departmentService.UpdateDepartment(_mapper.Map<DepartmentToUpdateDto>(departmentViewModel));
-                //{
-                //    Id = id,
-                //    Code = departmentViewModel.Code,
-                //    CreationDate = departmentViewModel.CreationDate,
-                //    Description = departmentViewModel.Description,
-                //    Name = departmentViewModel.Name
-                //});
-                if (Result > 0)
-                {
-                    TempData["Message"] = "Congratolations! , Department is Updated";
+                _logger.Information("Updating department: {@DepartmentVM}", departmentVM);
+                var result = _departmentService.UpdateDepartment(_mapper.Map<DepartmentToUpdateDto>(departmentVM));
 
+                if (result > 0)
+                {
+                    TempData["Message"] = "Department updated successfully!";
                     return RedirectToAction("Index");
                 }
-                else
-                {
-                    message = "Department is not updated Ya Man !";
-                    TempData["Message"]= message;
-                    ModelState.AddModelError(string.Empty, message);
-                    return View(departmentViewModel);
-                }
 
+                _logger.Warning("Failed to update department: {@DepartmentVM}", departmentVM);
+                ModelState.AddModelError(string.Empty, "Failed to update department.");
+                return View(departmentVM);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, ex.Message);
-                if (_environment.IsDevelopment())
-                {
-                    message = ex.Message;
-                    return View(departmentViewModel);
-                }
-                else
-                {
-                    message = "An error occurred while updating the department";
-                    return View("Error", message);
-
-                }
-
+                _logger.Error(ex, "Error updating department: {@DepartmentVM}", departmentVM);
+                return View("Error", "An error occurred while updating the department.");
             }
-
         }
-        #endregion
 
-        #region Delete
         [HttpGet]
         public IActionResult Delete(int? id)
         {
-            if (id is null)
+            if (!id.HasValue)
                 return BadRequest();
+
+            _logger.Information("Fetching department for deletion: ID {Id}", id);
             var department = _departmentService.GetDepartmentsById(id.Value);
-            if (department is null)
-            {
-                return NotFound();
-            }
-            return View(department);
-
-
-
+            return department == null ? NotFound() : View(department);
         }
-        [HttpPost]
-        [ValidateAntiForgeryToken] //Action Filter
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult Delete(int id)
         {
-            var message = string.Empty;
             try
             {
-                var Result = _departmentService.DeleteDepartment(id);
-
-                if (Result == true)
+                _logger.Information("Deleting department: ID {Id}", id);
+                var result = _departmentService.DeleteDepartment(id);
+                if (result)
                 {
-                    TempData["Message"] = "Sure! , Department is Removed";
+                    TempData["Message"] = "Department deleted successfully!";
                     return RedirectToAction("Index");
                 }
-                else
-                {
-                    message = "Department is not deleted Ya Man!";
-                    ModelState.AddModelError(string.Empty, message);
-                    return View();
-                }
 
+                _logger.Warning("Failed to delete department: ID {Id}", id);
+                ModelState.AddModelError(string.Empty, "Failed to delete department.");
+                return View("Index");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, ex.Message);
-                if (_environment.IsDevelopment())
-                {
-                    message = ex.Message;
-                    return View();
-                }
-                else
-                {
-                    message = "An error occurred while deleting the department";
-                    return View("Error", message);
-
-                }
-
+                _logger.Error(ex, "Error deleting department: ID {Id}", id);
+                return View("Error", "An error occurred while deleting the department.");
             }
-
-        } 
-        #endregion
-
+        }
     }
 }

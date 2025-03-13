@@ -15,6 +15,10 @@ using System.Threading.Tasks;
 using Serilog;
 using Demo.DAL.Presistance.UnitOfWork;
 using Demo.BLL.Services.Attacments;
+using Microsoft.AspNetCore.Hosting;
+
+// Aggiungi questa using
+
 
 namespace Demo.BLL.Services.Employees
 {
@@ -27,13 +31,15 @@ namespace Demo.BLL.Services.Employees
         public IMapper _mapper;
         public ILogger<EmployeeService> _logger;
 
-        public EmployeeService(ILogger<EmployeeService> logger,IMapper mapper,IUnitOfWork unitOfWork,IAttacchmentService attacchmentService) //Ask Clr to Create instance
+        public IWebHostEnvironment _env;
+        public EmployeeService(ILogger<EmployeeService> logger,IMapper mapper,IUnitOfWork unitOfWork,IAttacchmentService attacchmentService, IWebHostEnvironment env) //Ask Clr to Create instance
         {
     
             _mapper = mapper;
             _logger = logger;
             _unitOfWork = unitOfWork;
             _attachmentService = attacchmentService;
+            _env = env;
         }
 
         #region Create
@@ -41,46 +47,49 @@ namespace Demo.BLL.Services.Employees
         {
             try
             {
-                //Log.Information("DTO ricevuto: {@Dto}", employeeCreateDto);
-                //var employeet = _mapper.Map<Employee>(employeeCreateDto);
-                //Log.Information("Entità mappata: {@Employee}", employeet);
+                _logger.LogInformation("Ricevuto DTO: {@Dto}", employeeCreateDto);
 
+                // Se c'è un file, lo salviamo prima
+                if (employeeCreateDto.Image != null)
+                {
+                    _logger.LogInformation("Trovato file: {FileName}, Dimensione: {Size} bytes",
+                        employeeCreateDto.Image.FileName, employeeCreateDto.Image.Length);
 
+                    var fileName = _attachmentService.Upload(employeeCreateDto.Image, "Images");
+
+                    if (!string.IsNullOrEmpty(fileName))
+                    {
+                        _logger.LogInformation("File salvato con nome: {FileName}", fileName);
+                        employeeCreateDto.ImagePath = fileName; // Assegniamo il nome del file
+                    }
+                    else
+                    {
+                        _logger.LogError("Errore durante il salvataggio dell'immagine.");
+                        return 0; // Fallisce il salvataggio
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("Nessun file ricevuto per l'upload.");
+                }
+
+                // Ora possiamo mappare l'oggetto
                 var employee = _mapper.Map<Employee>(employeeCreateDto);
-                //Employee employee = new Employee()
-                ////{
-                //    Name = employeeCreateDto.Name,
-                //    Age = employeeCreateDto.Age,
-                //    Address = employeeCreateDto.Address,
-                //    Salary = employeeCreateDto.Salary,
-                //    PhoneNumber = employeeCreateDto.PhoneNumber,
-                //    IsActive = employeeCreateDto.IsActive,
-                //    Email = employeeCreateDto.Email,
-                //    HiringDate = employeeCreateDto.HiringDate,
-                //    Gender = employeeCreateDto.Gender,
-                //    EmployeeType = employeeCreateDto.EmployeeType,
-                //    CreatedBy = 1,
-                //    LastModifiedBy = 1,
-                //    LastModifiedOn = DateTime.UtcNow,
-                //    DepartmentId = employeeCreateDto.DepartmentId
-                //};
 
-                //employee.CreatedBy = 1;
-                //employee.LastModifiedBy = 1;
-                //employee.LastModifiedOn = DateTime.UtcNow;
-                if (employeeCreateDto.Img is not null)
-                    employee.Img = _attachmentService.Upload(employeeCreateDto.Img, "Imags");
+                _unitOfWork.EmployeeRepository.AddT(employee);
+                int result = _unitOfWork.Complete();
 
-                _unitOfWork.EmployeeRepository.AddT(employee);//Number of rows affected
-            return _unitOfWork.Complete();
+                _logger.LogInformation("Dipendente salvato: {Employee}", JsonConvert.SerializeObject(employee));
 
+                return result;
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Message);
+                _logger.LogError(ex, "Errore durante la creazione del dipendente.");
                 throw;
             }
         }
+
 
         #endregion
 
@@ -122,11 +131,55 @@ namespace Demo.BLL.Services.Employees
         #region Update
         public int UpdateEmployee(EmployeeToUpdateDto employeeUpdateDto)
         {
-            var employye = _mapper.Map<Employee>(employeeUpdateDto);
+            try
+            {
+                // Recupera il dipendente esistente dal repository
+                var employee = _unitOfWork.EmployeeRepository.GetById(employeeUpdateDto.Id);
+                if (employee == null)
+                {
+                    _logger.LogWarning("Dipendente con ID {Id} non trovato.", employeeUpdateDto.Id);
+                    return 0; // Nessun aggiornamento effettuato
+                }
 
-             _unitOfWork.EmployeeRepository.UpdateT(employye);
-            return _unitOfWork.Complete();
+                // Se è stata caricata una nuova immagine, aggiorna l'immagine
+                if (employeeUpdateDto.Image != null)
+                {
+                    _logger.LogInformation("Nuova immagine caricata: {FileName}", employeeUpdateDto.Image.FileName);
+
+                    // Elimina l'immagine precedente, se esiste
+                    if (!string.IsNullOrEmpty(employee.ImagePath))
+                    {
+                        var oldFilePath = Path.Combine(_env.WebRootPath, "Files", "Images", employee.ImagePath);
+                        if (File.Exists(oldFilePath))
+                        {
+                            File.Delete(oldFilePath);
+                            _logger.LogInformation("Immagine precedente eliminata: {OldFilePath}", oldFilePath);
+                        }
+                    }
+
+                    // Salva la nuova immagine e aggiorna il campo ImagePath
+                    var newFileName = _attachmentService.Upload(employeeUpdateDto.Image, "Images");
+                    if (!string.IsNullOrEmpty(newFileName))
+                    {
+                        employee.ImagePath = newFileName; // Aggiorna il nome dell'immagine nel database
+                        _logger.LogInformation("Immagine aggiornata con successo: {NewFileName}", newFileName);
+                    }
+                }
+
+                // Mappa gli altri campi del DTO nell'entità esistente (ma non l'immagine, che è già stata aggiornata)
+                _mapper.Map(employeeUpdateDto, employee); // Ignora tutti i membri non esplicitamente mappati
+
+                // Aggiorna il dipendente nel repository
+                _unitOfWork.EmployeeRepository.UpdateT(employee);
+                return _unitOfWork.Complete();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Errore durante l'aggiornamento del dipendente.");
+                throw;
+            }
         }
+
         #endregion
     }
 }

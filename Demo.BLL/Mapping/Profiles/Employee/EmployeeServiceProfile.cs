@@ -27,7 +27,7 @@ namespace Demo.BLL.Mapping.Profiles.Employees
                 .ForMember(dest => dest.Department, opt => opt.MapFrom(src => (Department?)null)); // Assicura che sia nullo
 
             CreateMap<Employee, EmployeeDetailsDto>();
-            CreateMap<EmployeeToUpdateDto, Employee>();
+            CreateMap<EmployeeToUpdateDto, Employee>().ForMember(dest => dest.ImagePath, opt => opt.Ignore());
             CreateMap<Employee, EmployeeToReturnDto>();
         }
     }

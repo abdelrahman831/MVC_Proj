@@ -24,9 +24,8 @@ namespace Demo.PL.Mapping.Profiles
     .ForSourceMember(src => src.CreatedOn, opt => opt.DoNotValidate())
     .ForSourceMember(src => src.LastModifiedBy, opt => opt.DoNotValidate())
     .ForSourceMember(src => src.LastModifiedOn, opt => opt.DoNotValidate())
-    .ForSourceMember(src => src.IsDeleted, opt => opt.DoNotValidate())
+    .ForSourceMember(src => src.IsDeleted, opt => opt.DoNotValidate());
 
-                .ForMember(dest => dest.Img, opt => opt.Ignore());
 
 
 

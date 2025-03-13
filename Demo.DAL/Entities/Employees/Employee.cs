@@ -23,7 +23,7 @@ namespace Demo.DAL.Entities.Employees
         //Navegation Property //Employee has a department one
         public virtual Department? Department { get; set; }
         public int?  DepartmentId { get; set; }
-       public string? Img { get; set; }
+       public string? ImagePath { get; set; }
     }
 
 }

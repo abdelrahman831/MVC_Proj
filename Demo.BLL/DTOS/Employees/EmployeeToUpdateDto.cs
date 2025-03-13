@@ -37,6 +37,7 @@ namespace Demo.BLL.DTOS.Employees
         public EmployeeType EmployeeType { get; set; }
         [Display(Name = "Department")]
         public int? DepartmentId { get; set; }
-        public IFormFile? Img { get; set; }
+        public IFormFile? Image { get; set; }
+        public string? ImagePath { get; set; }
     }
 }

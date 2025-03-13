@@ -1,58 +1,94 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.IO;
 
 namespace Demo.BLL.Services.Attacments
 {
-    public class AttachmentService :IAttacchmentService
+    public class AttachmentService : IAttacchmentService
     {
-        public readonly List<string> _allowedExtentions = new() { ".png", ".jpg", ".jpeg" };
-        //Max Size 2MB
-        public const int _maxAllowedSize = 2_097_152;
+        private readonly List<string> _allowedExtensions = new() { ".png", ".jpg", ".jpeg" };
+        private const int _maxAllowedSize = 2_097_152; // 2MB
+
+        private readonly IWebHostEnvironment _env;
+        private readonly ILogger<AttachmentService> _logger;
+
+        public AttachmentService(IWebHostEnvironment env, ILogger<AttachmentService> logger)
+        {
+            _env = env;
+            _logger = logger;
+        }
+
         public string? Upload(IFormFile file, string folderName)
         {
-            //1] Validate for extensions [".png", ".jpg", ".jpeg"]
-            var extention = Path.GetExtension(file.FileName);
-            if (!_allowedExtentions.Contains(extention))
+            if (file == null || file.Length == 0)
+            {
+                _logger.LogWarning("File nullo o vuoto.");
                 return null;
+            }
 
-            //2] Validate for Max size[2_097_152; //2MB]
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (!_allowedExtensions.Contains(extension))
+            {
+                _logger.LogWarning("Estensione non valida: {Extension}", extension);
+                return null;
+            }
+
             if (file.Length > _maxAllowedSize)
+            {
+                _logger.LogWarning("File troppo grande: {Size} bytes", file.Length);
                 return null;
+            }
 
-            //3] Get located folder path
-            //   var folderPath = "E:\\dotnet\\Route\\C#\\MVC\\Session 03\\Assignment\\Group01MVC\\Demo.PL\\wwwroot\\Files\\Imags\\"
-            var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot\\Files", "Images");
+            var folderPath = Path.Combine(_env.WebRootPath, "Files", folderName);
+            if (!Directory.Exists(folderPath))
+            {
+                Directory.CreateDirectory(folderPath);
+                _logger.LogInformation("Cartella creata: {FolderPath}", folderPath);
+            }
 
-            //4] Set unique file name
-            //132321313.png
-            var fileName = $"{Guid.NewGuid()}{extention}";
-
-            //5] Get file path [FolderPath + FileName]
+            var fileName = $"{Guid.NewGuid()}{extension}";
             var filePath = Path.Combine(folderPath, fileName);
 
-            //6] Save file as stream [Data per time]
-            using var fileStream = new FileStream(filePath, FileMode.Create);
-
-            //7] Copy file to the stream
-            file.CopyTo(fileStream);
-
-            //8] Return file name
-            return fileName;
-
+            try
+            {
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    file.CopyTo(stream);
+                }
+                _logger.LogInformation("File salvato correttamente: {FilePath}", filePath);
+                return fileName;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Errore nel salvataggio del file: {FilePath}", filePath);
+                return null;
+            }
         }
 
         public bool Delete(string filePath)
         {
-            if (File.Exists(filePath))
+            try
             {
-                File.Delete(filePath);
-                return true;
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                    _logger.LogInformation("File {FilePath} deleted successfully.", filePath);
+                    return true;
+                }
+                else
+                {
+                    _logger.LogWarning("File {FilePath} not found for deletion.", filePath);
+                    return false;
+                }
             }
-            return false;
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting file {FilePath}", filePath);
+                return false;
+            }
         }
     }
 }

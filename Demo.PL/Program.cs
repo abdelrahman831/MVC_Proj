@@ -56,7 +56,7 @@ namespace Demo.PL
 
             Log.Logger = new LoggerConfiguration().WriteTo.File("logs/app-log.txt", rollingInterval: RollingInterval.Day)
             .CreateLogger();
-
+            //builder.Host.UseSerilog();
             //builder.Host.UseSerilog();
 
             var app = builder.Build();

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Demo.BLL.Services.Attacments
 {
-    public interface IAttacchmentService
+    public interface IAttacchmentService 
 
     {
 

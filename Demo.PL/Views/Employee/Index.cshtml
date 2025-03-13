@@ -36,7 +36,7 @@
     <table class="table table-striped table-hover mt-3">
         <thead class=" text-center">
             <tr>
-                <th>@Html.DisplayNameFor(e => e.Img)</th>
+                <th>@Html.DisplayNameFor(e => e.ImagePath)</th>
                 <th>@Html.DisplayNameFor(e => e.Name)</th>
                 <th>@Html.DisplayNameFor(e => e.Email)</th>
                 <th>@Html.DisplayNameFor(e => e.EmployeeType)</th>
@@ -57,7 +57,7 @@
             {
               <tr>
                     <td>
-                        <img src="~/Files/Images/@(employee.Img is not null ? employee.Img : "NotFound.png")" class="rounded" width="40" height="40" alt="EmployeeImage" />
+                        <img src="~/Files/Images/@(employee.ImagePath is not null ? employee.ImagePath : "NotFound.png")" class="rounded" width="40" height="40" alt="EmployeeImage" />
                     </td>
                     <td>@Html.DisplayFor(e=>employee.Name)</td>
                     <td>@Html.DisplayFor(e=>employee.Email)</td>

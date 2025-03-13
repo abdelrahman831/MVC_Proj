@@ -1,304 +1,166 @@
 ﻿using AutoMapper;
 using Demo.BLL.DTOS.Employees;
-using Demo.BLL.Services.Departments;
 using Demo.BLL.Services.Employees;
-using Demo.DAL.Entities.Common.Enums;
-using Demo.DAL.Entities.Employees;
 using Demo.PL.ViewModels.Employee;
 using Microsoft.AspNetCore.Mvc;
-using System.CodeDom;
 using Serilog;
 
 namespace Demo.PL.Controllers
 {
     public class EmployeeController : Controller
     {
-        //Action ==> Master Action
-        #region  Service //DependancyInjection
         private readonly IEmployeeService _employeeService;
         private readonly IMapper _mapper;
-        private readonly ILogger<EmployeeController> _logger;
+        private readonly Serilog.ILogger _logger;
         private readonly IWebHostEnvironment _environment;
 
-        public EmployeeController(IEmployeeService employeeService,IMapper mapper, ILogger<EmployeeController> logger, IWebHostEnvironment environment)
+        public EmployeeController(IEmployeeService employeeService, IMapper mapper, IWebHostEnvironment environment)
         {
             _employeeService = employeeService;
             _mapper = mapper;
-            _logger = logger;
+            _logger = Log.ForContext<EmployeeController>();
             _environment = environment;
         }
-        #endregion
 
-        #region Index
-        [HttpGet] //As Default
+        [HttpGet]
         public IActionResult Index()
         {
+            _logger.Information("Fetching all employees");
             var employees = _employeeService.GetAllEmployees();
             return View(employees);
-        } 
-        #endregion
-
-        #region Create
-        [HttpGet]
-        //show the form
-        public IActionResult Create( )
-        {
-            //Send Department from action
-        //    ViewData["Departments"] = departmentService.GetAllDepartments();
-            return View();
         }
+
+        [HttpGet]
+        public IActionResult Create() => View();
+
         [HttpPost]
-        [ValidateAntiForgeryToken] //Action Filter
+        [ValidateAntiForgeryToken]
         public IActionResult Create(EmployeeViewModel employeeVM)
         {
             if (!ModelState.IsValid)
-
+            {
+                _logger.Warning("Invalid model state for EmployeeViewModel: {@EmployeeVM}", employeeVM);
                 return View(employeeVM);
-            var message = string.Empty;
+            }
+
             try
             {
-                Log.Information("DTO ricevuto: {@Dto}", employeeVM);
+                _logger.Information("Creating new employee: {@EmployeeVM}", employeeVM);
+                var employeeDto = _mapper.Map<EmployeeToCreateDto>(employeeVM);
+                var result = _employeeService.CreateEmployee(employeeDto);
 
-                var result = _mapper.Map<EmployeeToCreateDto>(employeeVM);
-
-                Log.Information("Entità mappata: {@Employee}", result);
-                var Result = _employeeService.CreateEmployee(result);
-
-
-                //var Result = _employeeService.CreateEmployee(new EmployeeToCreateDto(){
-                //    Name = employeeVM.Name,
-                //    Age = employeeVM.Age,
-                //    Address = employeeVM.Address,
-                //    Salary = employeeVM.Salary,
-                //    PhoneNumber = employeeVM.PhoneNumber,
-                //    IsActive = employeeVM.IsActive,
-                //    Email = employeeVM.Email,
-                //    HiringDate = employeeVM.HiringDate,
-                //    Gender = employeeVM.Gender,
-                //    EmployeeType = employeeVM.EmployeeType,
-                //    DepartmentId = employeeVM.DepartmentId
-                //});
-
-
-                if (Result > 0)
+                if (result > 0)
                 {
-                    TempData["Message"] = "Congratolations! , Employee is created";
-
+                    TempData["Message"] = "Employee created successfully!";
                     return RedirectToAction("Index");
                 }
-                else
-                {
-                    message = "Employee is not created";
-                    TempData["Message"] = message;
-                    ModelState.AddModelError(string.Empty, message);
-                    return View(employeeVM);
-                }
 
+                _logger.Warning("Failed to create employee: {@EmployeeVM}", employeeVM);
+                ModelState.AddModelError(string.Empty, "Failed to create employee.");
+                return View(employeeVM);
             }
             catch (Exception ex)
             {
-                Log.Error(ex, ex.Message);
-                if (_environment.IsDevelopment())
-                {
-                    message = ex.Message;
-                    return View();
-                }
-                else
-                {
-                    message = "An error occurred while creating the Employee";
-                    return View("Error", message);
-
-
-                }
-
+                _logger.Error(ex, "Error creating employee: {@EmployeeVM}", employeeVM);
+                return View("Error", "An error occurred while creating the employee.");
             }
         }
-        #endregion
 
-        #region Details
         [HttpGet]
         public IActionResult Details(int? id)
         {
-            if (id is null)
-            {
+            if (!id.HasValue)
                 return BadRequest();
-            }
+
+            _logger.Information("Fetching details for employee ID: {Id}", id);
             var employee = _employeeService.GetEmployeesById(id.Value);
-            if (employee is null)
-            {
-                return NotFound();
-            }
-            return View(employee);
-
+            return employee == null ? NotFound() : View(employee);
         }
-        #endregion
 
-        #region Update
         [HttpGet]
         public IActionResult Edit(int? id)
         {
-            if (id is null)
-            {
+            if (!id.HasValue)
                 return BadRequest();
-            }
+
             try
             {
+                _logger.Information("Fetching employee for edit: ID {Id}", id);
                 var employee = _employeeService.GetEmployeesById(id.Value);
-                Log.Information("DTO ricevuto: {@Dto}", employee);
-
-                if (employee is null)
-                {
-                    return NotFound();
-                }
-                Log.Information("DTO MAPPATO: {@Dto}", _mapper.Map<EmployeeViewModel>(employee));
-
-
-                return View(_mapper.Map<EmployeeViewModel>(employee));
+                return employee == null ? NotFound() : View(_mapper.Map<EmployeeViewModel>(employee));
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Message);
-
-                return Redirect(nameof(Index));
+                _logger.Error(ex, "Error fetching employee for edit: ID {Id}", id);
+                return RedirectToAction("Index");
             }
-        //    {
-             
-        //        EmployeeType = Enum.TryParse<EmployeeType>(employee.EmployeeType, out var empType) ? empType : default,
-        //        Gender = Enum.TryParse<Gender>(employee.Gender, out var gender) ? gender : default,
-        //        Name = employee.Name,
-        //        Address = employee.Address,
-        //        Email = employee.Email,
-        //        Age = employee.Age,
-        //        IsActive = employee.IsActive,
-        //        PhoneNumber = employee.PhoneNumber,
-        //        HiringDate = employee.HiringDate,
-        //        Salary = employee.Salary,
-        //        DepartmentId=employee.DepartmentId
-               
-            
-        //    });
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken] //Action Filter
-
+        [ValidateAntiForgeryToken]
         public IActionResult Edit(EmployeeViewModel employeeVM)
         {
             if (!ModelState.IsValid)
             {
-
+                _logger.Warning("Invalid model state for updating EmployeeViewModel: {@EmployeeVM}", employeeVM);
                 return View(employeeVM);
             }
-            var message = string.Empty;
+
             try
             {
-                var Result = _employeeService.UpdateEmployee(_mapper.Map<EmployeeToUpdateDto>(employeeVM));
-                //{
-                //    Id = id,
-                //    Name = employeeVM.Name,
-                //    Age = employeeVM.Age,
-                //    Address = employeeVM.Address,
-                //    Salary = employeeVM.Salary,
-                //    PhoneNumber = employeeVM.PhoneNumber,
-                //    IsActive = employeeVM.IsActive,
-                //    Email = employeeVM.Email,
-                //    HiringDate = employeeVM.HiringDate,
-                //    Gender = employeeVM.Gender,
-                //    EmployeeType = employeeVM.EmployeeType,
-                //    DepartmentId = employeeVM.DepartmentId
-
-                //});
-                if (Result > 0)
+                _logger.Information("Updating employee: {@EmployeeVM}", employeeVM);
+                var result = _employeeService.UpdateEmployee(_mapper.Map<EmployeeToUpdateDto>(employeeVM));
+                if (result > 0)
                 {
-                    TempData["Message"] = "Congratolations! , Employee is Updated";
-
+                    TempData["Message"] = "Employee updated successfully!";
                     return RedirectToAction("Index");
                 }
-                else
-                {
-                    message = "Employee is not updated Ya Man !";
-                    TempData["Message"] = message;
-                    ModelState.AddModelError(string.Empty, message);
-                    return View(employeeVM);
-                }
 
+                _logger.Warning("Failed to update employee: {@EmployeeVM}", employeeVM);
+                ModelState.AddModelError(string.Empty, "Failed to update employee.");
+                return View(employeeVM);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, ex.Message);
-                if (_environment.IsDevelopment())
-                {
-                    message = ex.Message;
-                    return View(employeeVM);
-                }
-                else
-                {
-                    message = "An error occurred while updating the Employee";
-                    return View("Error", message);
-
-                }
-
+                _logger.Error(ex, "Error updating employee: {@EmployeeVM}", employeeVM);
+                return View("Error", "An error occurred while updating the employee.");
             }
-
         }
-        #endregion
 
-        #region Delete
-        [HttpGet]    //Way01 Delete
+        [HttpGet]
         public IActionResult Delete(int? id)
         {
+            if (!id.HasValue)
+                return BadRequest();
+
+            _logger.Information("Fetching employee for deletion: ID {Id}", id);
             var employee = _employeeService.GetEmployeesById(id.Value);
-            if (employee is null)
-            {
-                return NotFound();
-            }
-            return View(employee);
+            return employee == null ? NotFound() : View(employee);
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken] //Action Filter
-
+        [ValidateAntiForgeryToken]
         public IActionResult Delete(int id)
         {
-            var message = string.Empty;
             try
             {
-                var Result = _employeeService.DeleteEmployee(id);
-
-                if (Result == true)
+                _logger.Information("Deleting employee: ID {Id}", id);
+                var result = _employeeService.DeleteEmployee(id);
+                if (result)
                 {
-                    TempData["Message"] = "Sure!, Employee is Deleted";
-
+                    TempData["Message"] = "Employee deleted successfully!";
                     return RedirectToAction("Index");
                 }
-                else
-                {
-                    message = "Employee is not deleted Ya Man!";
-                    TempData["Message"] = message;
 
-                    ModelState.AddModelError(string.Empty, message);
-                    return View("Index");
-                }
-
+                _logger.Warning("Failed to delete employee: ID {Id}", id);
+                ModelState.AddModelError(string.Empty, "Failed to delete employee.");
+                return View("Index");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, ex.Message);
-                if (_environment.IsDevelopment())
-                {
-                    message = ex.Message;
-                    return View();
-                }
-                else
-                {
-                    message = "An error occurred while deleting the Employee";
-                    return View("Error", message);
-
-                }
-
+                _logger.Error(ex, "Error deleting employee: ID {Id}", id);
+                return View("Error", "An error occurred while deleting the employee.");
             }
-
-        } 
-        #endregion
+        }
     }
 }
