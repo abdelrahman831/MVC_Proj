@@ -141,13 +141,26 @@ namespace Demo.PL.Controllers
             {
                 return BadRequest();
             }
-            var employee = _employeeService.GetEmployeesById(id.Value);
-            if (employee is null)
+            try
             {
-                return NotFound();
+                var employee = _employeeService.GetEmployeesById(id.Value);
+                Log.Information("DTO ricevuto: {@Dto}", employee);
+
+                if (employee is null)
+                {
+                    return NotFound();
+                }
+                Log.Information("DTO MAPPATO: {@Dto}", _mapper.Map<EmployeeViewModel>(employee));
+
+
+                return View(_mapper.Map<EmployeeViewModel>(employee));
             }
-            
-            return View(_mapper.Map<EmployeeViewModel>(employee));
+            catch (Exception ex)
+            {
+                Log.Error(ex.Message);
+
+                return Redirect(nameof(Index));
+            }
         //    {
              
         //        EmployeeType = Enum.TryParse<EmployeeType>(employee.EmployeeType, out var empType) ? empType : default,

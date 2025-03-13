@@ -19,6 +19,11 @@ namespace Demo.PL.ViewModels.Employee
         public int Id { get; set; }
         public IFormFile? Img { get; set; }
 
+        public string DepartmentName { get; set; }
+
 
     }
 }
+
+
+

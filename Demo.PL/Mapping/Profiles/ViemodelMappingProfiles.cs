@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Demo.BLL.DTOS.Employees;
+using Demo.DAL.Entities.Departments;
 using Demo.DAL.Entities.Employees;
 using Demo.PL.ViewModels.Employee;
 
@@ -18,7 +19,12 @@ namespace Demo.PL.Mapping.Profiles
 
             CreateMap<EmployeeToCreateDto, Employee>();
 
-            CreateMap<EmployeeDetailsDto, EmployeeViewModel>();
+            CreateMap<EmployeeDetailsDto, EmployeeViewModel>()
+    .ForSourceMember(src => src.CreatedBy, opt => opt.DoNotValidate())
+    .ForSourceMember(src => src.CreatedOn, opt => opt.DoNotValidate())
+    .ForSourceMember(src => src.LastModifiedBy, opt => opt.DoNotValidate())
+    .ForSourceMember(src => src.LastModifiedOn, opt => opt.DoNotValidate())
+    .ForSourceMember(src => src.IsDeleted, opt => opt.DoNotValidate());
 
 
         }
