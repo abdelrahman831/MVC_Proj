@@ -15,6 +15,7 @@ using Demo.DAL.Presistance.UnitOfWork;
 using Demo.PL.Mapping.Profiles.Departments;
 using Demo.BLL.Mapping.Profiles.Employees;
 using Demo.BLL.Mapping.Profiles.Departments;
+using Demo.BLL.Services.Attacments;
 namespace Demo.PL
 {
     public class Program
@@ -46,8 +47,8 @@ namespace Demo.PL
 
             builder.Services.AddAutoMapper(typeof(EmployeeProfile));
             builder.Services.AddAutoMapper(typeof(DepartmentServiceMapping));
+            builder.Services.AddTransient<IAttacchmentService, AttachmentService>();
 
-            
 
 
 

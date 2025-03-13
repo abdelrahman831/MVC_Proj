@@ -57,11 +57,11 @@ namespace Demo.PL.Controllers
             var message = string.Empty;
             try
             {
-                //Log.Information("DTO ricevuto: {@Dto}", employeeVM);
+                Log.Information("DTO ricevuto: {@Dto}", employeeVM);
 
                 var result = _mapper.Map<EmployeeToCreateDto>(employeeVM);
 
-                //Log.Information("Entità mappata: {@Employee}", result);
+                Log.Information("Entità mappata: {@Employee}", result);
                 var Result = _employeeService.CreateEmployee(result);
 
 

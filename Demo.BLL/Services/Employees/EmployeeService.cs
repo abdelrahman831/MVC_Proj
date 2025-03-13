@@ -14,6 +14,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Serilog;
 using Demo.DAL.Presistance.UnitOfWork;
+using Demo.BLL.Services.Attacments;
 
 namespace Demo.BLL.Services.Employees
 {
@@ -21,16 +22,18 @@ namespace Demo.BLL.Services.Employees
     {
 
         public IEmployeeRepository _employeeRepository;
+        private readonly IAttacchmentService _attachmentService;
         public IUnitOfWork _unitOfWork;
         public IMapper _mapper;
         public ILogger<EmployeeService> _logger;
 
-        public EmployeeService(ILogger<EmployeeService> logger,IMapper mapper,IUnitOfWork unitOfWork) //Ask Clr to Create instance
+        public EmployeeService(ILogger<EmployeeService> logger,IMapper mapper,IUnitOfWork unitOfWork,IAttacchmentService attacchmentService) //Ask Clr to Create instance
         {
     
             _mapper = mapper;
             _logger = logger;
             _unitOfWork = unitOfWork;
+            _attachmentService = attacchmentService;
         }
 
         #region Create
@@ -44,27 +47,29 @@ namespace Demo.BLL.Services.Employees
 
 
                 var employee = _mapper.Map<Employee>(employeeCreateDto);
-            //Employee employee = new Employee()
-            ////{
-            //    Name = employeeCreateDto.Name,
-            //    Age = employeeCreateDto.Age,
-            //    Address = employeeCreateDto.Address,
-            //    Salary = employeeCreateDto.Salary,
-            //    PhoneNumber = employeeCreateDto.PhoneNumber,
-            //    IsActive = employeeCreateDto.IsActive,
-            //    Email = employeeCreateDto.Email,
-            //    HiringDate = employeeCreateDto.HiringDate,
-            //    Gender = employeeCreateDto.Gender,
-            //    EmployeeType = employeeCreateDto.EmployeeType,
-            //    CreatedBy = 1,
-            //    LastModifiedBy = 1,
-            //    LastModifiedOn = DateTime.UtcNow,
-            //    DepartmentId = employeeCreateDto.DepartmentId
-            //};
+                //Employee employee = new Employee()
+                ////{
+                //    Name = employeeCreateDto.Name,
+                //    Age = employeeCreateDto.Age,
+                //    Address = employeeCreateDto.Address,
+                //    Salary = employeeCreateDto.Salary,
+                //    PhoneNumber = employeeCreateDto.PhoneNumber,
+                //    IsActive = employeeCreateDto.IsActive,
+                //    Email = employeeCreateDto.Email,
+                //    HiringDate = employeeCreateDto.HiringDate,
+                //    Gender = employeeCreateDto.Gender,
+                //    EmployeeType = employeeCreateDto.EmployeeType,
+                //    CreatedBy = 1,
+                //    LastModifiedBy = 1,
+                //    LastModifiedOn = DateTime.UtcNow,
+                //    DepartmentId = employeeCreateDto.DepartmentId
+                //};
 
                 //employee.CreatedBy = 1;
                 //employee.LastModifiedBy = 1;
                 //employee.LastModifiedOn = DateTime.UtcNow;
+                if (employeeCreateDto.Img is not null)
+                    employee.Img = _attachmentService.Upload(employeeCreateDto.Img, "Imags");
 
                 _unitOfWork.EmployeeRepository.AddT(employee);//Number of rows affected
             return _unitOfWork.Complete();

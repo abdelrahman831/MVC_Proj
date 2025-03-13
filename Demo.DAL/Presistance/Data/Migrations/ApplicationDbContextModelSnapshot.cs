@@ -110,6 +110,9 @@ namespace Demo.DAL.Presistance.Data.Migrations
                     b.Property<DateOnly>("HiringDate")
                         .HasColumnType("date");
 
+                    b.Property<string>("Img")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 

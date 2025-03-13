@@ -1,5 +1,16 @@
 ﻿@model EmployeeDetailsDto
+@inject IDepartmentService departmentService
+@{
+    // var departmentList = ViewData["Departments"] as IEnumerable<DepartmentToReturnDto> ?? new List<DepartmentToReturnDto>();
+    var Departments = new SelectList(departmentService.GetAllDepartments(), nameof(DepartmentToReturnDto.Id), nameof(DepartmentToReturnDto.Name));
+}
+<br />
+<div class="row justify-content-center align-items-lg-start align-items-center">
+    <div class="col-4">
+        <img src="~/files/Images/@(Model.Img is not null ? Model.Img : "NotFound.png")" class=" img-fluid rounded-circle" alt="Employee Image" />
+    </div>
 
+</div>
 <ul class="nav nav-tabs" id="departmentTabs" role="tablist">
     <li class="nav-item" role="presentation">
         <a class="nav-link active" id="general-tab" data-bs-toggle="tab" href="#general" role="tab" aria-controls="general" style="color: black;">General</a>
@@ -84,7 +95,7 @@
 
             <div class="form-group col-6">
                 <label class="form-label" asp-for="DepartmentId"></label>
-                <input asp-for="DepartmentId" class="form-control" readonly />
+                <input asp-for="DepartmentId" class="form-control" value="Departments" readonly />
 
             </div>
             @* //-----------// *@

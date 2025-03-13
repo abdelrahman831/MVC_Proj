@@ -9,11 +9,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace Demo.DAL.Persistance.Data.Migrations
+namespace Demo.DAL.Presistance.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250311185823_FirstTest")]
-    partial class FirstTest
+    [Migration("20250312233032_Upload image4")]
+    partial class Uploadimage4
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -112,6 +112,9 @@ namespace Demo.DAL.Persistance.Data.Migrations
 
                     b.Property<DateOnly>("HiringDate")
                         .HasColumnType("date");
+
+                    b.Property<string>("Img")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
