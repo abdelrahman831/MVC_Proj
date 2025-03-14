@@ -1,49 +1,105 @@
 ﻿@model EmployeeViewModel
 @inject IDepartmentService departmentService
-
 @{
-    var departments = departmentService.GetAllDepartments()
-        .Select(d => new SelectListItem { Value = d.Id.ToString(), Text = d.Name })
-        .ToList();
+    //var departmentList = ViewData["Departments"] as IEnumerable<DepartmentToReturnDto> ?? new List<DepartmentToReturnDto>();
+    var Departments = new SelectList(departmentService.GetAllDepartments(), nameof(DepartmentToReturnDto.Id), nameof(DepartmentToReturnDto.Name));
 
-    ViewBag.Departments = new SelectList(departments, "Value", "Text", Model?.DepartmentId);
 }
 
-<form asp-controller="Employee" asp-action="@ViewBag.Action" method="post" enctype="multipart/form-data" class="mb-5">
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+<form asp-controller="Employee" asp-action="@ViewBag.Action" method="post" enctype="multipart/form-data" class="mb-5 pb-5">
+    <div asp-validation-summary="ModelOnly">    </div>
 
     <div class="row">
-        <!-- Name -->
+        <!-- Name Field -->
         <div class="form-group col-6">
             <label asp-for="Name" class="form-label">Name</label>
-            <input asp-for="Name" type="text" class="form-control">
+            <input asp-for="Name" type="text" class="form-control" id="Name" name="Name">
             <span asp-validation-for="Name" class="text-danger"></span>
         </div>
 
-        <!-- Email -->
+        <!-- Email Field -->
         <div class="form-group col-6">
             <label asp-for="Email" class="form-label">Email</label>
-            <input asp-for="Email" type="email" class="form-control">
+            <input asp-for="Email" type="text" class="form-control" id="Email" name="Email">
             <span asp-validation-for="Email" class="text-danger"></span>
         </div>
 
-        <!-- Department -->
+        <!-- Address Field -->
         <div class="form-group col-6">
+            <label asp-for="Address" class="form-label">Address</label>
+            <input asp-for="Address" class="form-control">
+            <span asp-validation-for="Address" class="text-danger"></span>
+        </div>
+
+        <!-- Phone Number Field -->
+        <div class="form-group col-6">
+            <label asp-for="PhoneNumber" class="form-label">Phone Number</label>
+            <input asp-for="PhoneNumber" class="form-control">
+            <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+        </div>
+
+        <!-- Age Field -->
+        <div class="form-group col-6">
+            <label asp-for="Age" class="form-label">Age</label>
+            <input asp-for="Age" class="form-control">
+            <span asp-validation-for="Age" class="text-danger"></span>
+        </div>
+        <!-- Hiring Date Field -->
+        <div class="form-group col-6">
+            <label asp-for="HiringDate" class="form-label">Hiring Date</label>
+            <input asp-for="HiringDate" type="date" class="form-control">
+            <span asp-validation-for="HiringDate" class="text-danger"></span>
+        </div>
+        <!-- Salary Field -->
+        <div class="form-group col-6">
+            <label asp-for="Salary" class="form-label">Salary</label>
+            <input asp-for="Salary" class="form-control">
+            <span asp-validation-for="Salary" class="text-danger"></span>
+        </div>
+        <!-- Gender Field -->
+        <div class="form-group col-6">
+            <label asp-for="Gender" class="form-label">Gender</label>
+            <div>
+                @foreach (Gender genderOption in Enum.GetValues(typeof(Gender)))
+                {
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" asp-for="Gender" value="@genderOption">
+                        <label asp-for="Gender" class="form-check-label">@genderOption</label>
+                    </div>
+                }
+            </div>
+            <span asp-validation-for="Gender" class="text-danger"></span>
+        </div>
+
+
+        <!-- Employee Type Field -->
+        <div class="form-group mb-3">
+            <label asp-for="EmployeeType" class="form-label">Employee Type</label>
+            <select asp-for="EmployeeType" asp-items="Html.GetEnumSelectList<EmployeeType>()" class="form-control">
+                <option value="">Select Employee Type</option>
+            </select>
+            <span asp-validation-for="EmployeeType" class="text-danger"></span>
+        </div>
+        <!-- Department Field -->
+
+        <div class="form-group mb-3">
             <label asp-for="DepartmentId" class="form-label">Department</label>
-            <select asp-for="DepartmentId" class="form-control" asp-items="ViewBag.Departments">
-                <option value="">Select Department</option>
+            <select asp-for="DepartmentId" asp-items="Departments" class="form-control">
+                <option value="">Select Department</option> <!-- Only show if DepartmentId is null -->
             </select>
             <span asp-validation-for="DepartmentId" class="text-danger"></span>
         </div>
 
+
+
         <!-- Image Upload -->
         <div class="form-group col-6">
             <label class="form-label">Image</label>
+
             @if (!string.IsNullOrEmpty(Model?.ImagePath))
             {
                 <div>
-                    <img src="@Url.Content($"~/Files/Images/{Model.ImagePath}")" alt="Employee Image" class="img-thumbnail" style="max-width: 150px;">
-
+                    <img src="@Url.Content($"~/files/Images/{Model.ImagePath}")" alt="Employee Image" class="img-thumbnail" style="max-width: 150px;">
                 </div>
             }
 
@@ -51,15 +107,27 @@
             <span asp-validation-for="Image" class="text-danger"></span>
         </div>
 
-        <!-- Buttons -->
-        <div class="d-flex justify-content-center gap-3 mt-3">
-            <button type="submit" class="btn btn-primary px-4">
-                @(ViewBag.Action == "Create" ? "Create" : "Save")
-            </button>
-            <a asp-action="Index" class="btn btn-outline-secondary px-4">
-                @(ViewBag.Action == "Create" ? "Cancel" : "Back to List")
-            </a>
-        </div>
-    </div>
-</form>
+        <!-- Buttons Section -->
+        @if (ViewBag.Action == "Create")
+        {
+            <div class="d-flex justify-content-center gap-3 mt-3">
+                <button type="submit" class="btn btn-primary px-4" style="background-color: #6a0dad; border-color: #6a0dad;">
+                    Create
+                </button>
+                <a asp-controller="Employee" asp-action="Index" class="btn btn-outline-secondary px-4">Cancel</a>
+            </div>
+        }
 
+        else
+        {
+            <div class="d-flex justify-content-center gap-3 mt-3">
+                <button type="submit" class="btn btn-success px-4" style="background-color: #6a0dad; border-color: #6a0dad;">
+                    Save
+                </button>
+
+                <a asp-action="Index" class="btn btn-outline-secondary px-4">Back to List</a>
+            </div>
+        }
+
+
+</form>
