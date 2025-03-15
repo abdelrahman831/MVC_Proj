@@ -23,10 +23,10 @@ namespace Demo.PL.Controllers
         }
 
         [HttpGet]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             _logger.Information("Fetching all departments");
-            var departments = _departmentService.GetAllDepartments();
+            var departments = await _departmentService.GetAllDepartmentsAsync();
             return View(departments);
         }
 
@@ -35,7 +35,7 @@ namespace Demo.PL.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(DepartmentViewModel departmentVM)
+        public async Task<IActionResult> Create(DepartmentViewModel departmentVM)
         {
             if (!ModelState.IsValid)
             {
@@ -46,7 +46,7 @@ namespace Demo.PL.Controllers
             try
             {
                 _logger.Information("Creating new department: {@DepartmentVM}", departmentVM);
-                var result = _departmentService.CreateDepartment(_mapper.Map<DepartmentToCreateDto>(departmentVM));
+                var result = await _departmentService.CreateDepartmentAsync(_mapper.Map<DepartmentToCreateDto>(departmentVM));
 
                 if (result > 0)
                 {
@@ -66,18 +66,18 @@ namespace Demo.PL.Controllers
         }
 
         [HttpGet]
-        public IActionResult Details(int? id)
+        public async Task<IActionResult> Details(int? id)
         {
             if (!id.HasValue)
                 return BadRequest();
 
             _logger.Information("Fetching details for department ID: {Id}", id);
-            var department = _departmentService.GetDepartmentsById(id.Value);
+            var department =await  _departmentService.GetDepartmentsByIdAsync(id.Value);
             return department == null ? NotFound() : View(department);
         }
 
         [HttpGet]
-        public IActionResult Edit(int? id)
+        public async Task<IActionResult> Edit(int? id)
         {
             if (!id.HasValue)
                 return BadRequest();
@@ -85,7 +85,7 @@ namespace Demo.PL.Controllers
             try
             {
                 _logger.Information("Fetching department for edit: ID {Id}", id);
-                var department = _departmentService.GetDepartmentsById(id.Value);
+                var department =await _departmentService.GetDepartmentsByIdAsync(id.Value);
                 return department == null ? NotFound() : View(_mapper.Map<DepartmentViewModel>(department));
             }
             catch (Exception ex)
@@ -97,7 +97,7 @@ namespace Demo.PL.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(DepartmentViewModel departmentVM)
+        public async Task<IActionResult> Edit(DepartmentViewModel departmentVM)
         {
             if (!ModelState.IsValid)
             {
@@ -108,7 +108,7 @@ namespace Demo.PL.Controllers
             try
             {
                 _logger.Information("Updating department: {@DepartmentVM}", departmentVM);
-                var result = _departmentService.UpdateDepartment(_mapper.Map<DepartmentToUpdateDto>(departmentVM));
+                var result = await _departmentService.UpdateDepartmentAsync(_mapper.Map<DepartmentToUpdateDto>(departmentVM));
 
                 if (result > 0)
                 {
@@ -134,18 +134,18 @@ namespace Demo.PL.Controllers
                 return BadRequest();
 
             _logger.Information("Fetching department for deletion: ID {Id}", id);
-            var department = _departmentService.GetDepartmentsById(id.Value);
+            var department =  _departmentService.GetDepartmentsByIdAsync(id.Value);
             return department == null ? NotFound() : View(department);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
             try
             {
                 _logger.Information("Deleting department: ID {Id}", id);
-                var result = _departmentService.DeleteDepartment(id);
+                var result = await _departmentService.DeleteDepartmentAsync(id);
                 if (result)
                 {
                     TempData["Message"] = "Department deleted successfully!";

@@ -43,7 +43,7 @@ namespace Demo.BLL.Services.Employees
         }
 
         #region Create
-        public int CreateEmployee(EmployeeToCreateDto employeeCreateDto)
+        public async Task<int> CreateEmployeeAsync(EmployeeToCreateDto employeeCreateDto)
         {
             try
             {
@@ -76,8 +76,8 @@ namespace Demo.BLL.Services.Employees
                 // Ora possiamo mappare l'oggetto
                 var employee = _mapper.Map<Employee>(employeeCreateDto);
 
-                _unitOfWork.EmployeeRepository.AddT(employee);
-                int result = _unitOfWork.Complete();
+                 _unitOfWork.EmployeeRepository.AddTAsync(employee);
+                int result = await _unitOfWork.CompleteAsync();
 
                 _logger.LogInformation("Dipendente salvato: {Employee}", JsonConvert.SerializeObject(employee));
 
@@ -94,30 +94,36 @@ namespace Demo.BLL.Services.Employees
         #endregion
 
         #region Delete
-        public bool DeleteEmployee(int id)
+        public async Task<bool> DeleteEmployeeAsync(int id)
         {
-            var employee = _unitOfWork.EmployeeRepository.GetById(id);
+            var employee =  await _unitOfWork.EmployeeRepository.GetByIdAsync(id);
             if (employee is not null)
-                _unitOfWork.EmployeeRepository.DeleteT(employee);
-            return _unitOfWork.Complete() >0;
+                 _unitOfWork.EmployeeRepository.DeleteTAsync(employee);
+            return await _unitOfWork.CompleteAsync() >0;
 
         }
         #endregion
 
         #region Index
-        public IEnumerable<EmployeeToReturnDto> GetAllEmployees()
+        public async Task<IEnumerable<EmployeeToReturnDto>> GetAllEmployeesAsync()
         {
-            return _unitOfWork.EmployeeRepository.GetAllQuarable().Include(E => E.Department)
-                 .Where(E => !E.IsDeleted)
-                 .Select(employee => _mapper.Map<EmployeeToReturnDto>(employee));
+            var query =  _unitOfWork.EmployeeRepository.GetAllQuarableAsync(); // Attendi il Task
 
-        } 
+            var employees = await query
+                .Include(e => e.Department)
+                .Where(e => !e.IsDeleted)
+                .Select(employee => _mapper.Map<EmployeeToReturnDto>(employee))
+                .ToListAsync(); // Esegui la query
+
+            return employees;
+        }
+
         #endregion
 
         #region Details
-        public EmployeeDetailsDto? GetEmployeesById(int id)
+        public async Task<EmployeeDetailsDto?> GetEmployeesByIdAsync(int id)
         {
-            var employee = _unitOfWork.EmployeeRepository.GetById(id);  
+            var employee =  await _unitOfWork.EmployeeRepository.GetByIdAsync(id);  
             if (employee is not null)
             {
                 return _mapper.Map<EmployeeDetailsDto>(employee);
@@ -129,12 +135,12 @@ namespace Demo.BLL.Services.Employees
         #endregion
 
         #region Update
-        public int UpdateEmployee(EmployeeToUpdateDto employeeUpdateDto)
+        public async Task<int> UpdateEmployeeAsync(EmployeeToUpdateDto employeeUpdateDto)
         {
             try
             {
                 // Recupera il dipendente esistente dal repository
-                var employee = _unitOfWork.EmployeeRepository.GetById(employeeUpdateDto.Id);
+                var employee = await  _unitOfWork.EmployeeRepository.GetByIdAsync(employeeUpdateDto.Id);
                 if (employee == null)
                 {
                     _logger.LogWarning("Dipendente con ID {Id} non trovato.", employeeUpdateDto.Id);
@@ -170,8 +176,8 @@ namespace Demo.BLL.Services.Employees
                 _mapper.Map(employeeUpdateDto, employee); // Ignora tutti i membri non esplicitamente mappati
 
                 // Aggiorna il dipendente nel repository
-                _unitOfWork.EmployeeRepository.UpdateT(employee);
-                return _unitOfWork.Complete();
+                 _unitOfWork.EmployeeRepository.UpdateTAsync(employee);
+                return await _unitOfWork.CompleteAsync();
             }
             catch (Exception ex)
             {

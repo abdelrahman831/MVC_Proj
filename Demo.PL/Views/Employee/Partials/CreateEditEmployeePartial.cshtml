@@ -2,7 +2,7 @@
 @inject IDepartmentService departmentService
 @{
     //var departmentList = ViewData["Departments"] as IEnumerable<DepartmentToReturnDto> ?? new List<DepartmentToReturnDto>();
-    var Departments = new SelectList(departmentService.GetAllDepartments(), nameof(DepartmentToReturnDto.Id), nameof(DepartmentToReturnDto.Name));
+    var Departments = new SelectList(await departmentService.GetAllDepartmentsAsync(), nameof(DepartmentToReturnDto.Id), nameof(DepartmentToReturnDto.Name));
 
 }
 
@@ -81,15 +81,13 @@
             <span asp-validation-for="EmployeeType" class="text-danger"></span>
         </div>
         <!-- Department Field -->
-
-        <div class="form-group mb-3">
+        <div class="form-group col-6">
             <label asp-for="DepartmentId" class="form-label">Department</label>
-            <select asp-for="DepartmentId" asp-items="Departments" class="form-control">
-                <option value="">Select Department</option> <!-- Only show if DepartmentId is null -->
+            <select asp-for="DepartmentId" class="form-control" asp-items="Departments">
+                <option value="">Select Department</option>
             </select>
             <span asp-validation-for="DepartmentId" class="text-danger"></span>
         </div>
-
 
 
         <!-- Image Upload -->
@@ -99,7 +97,7 @@
             @if (!string.IsNullOrEmpty(Model?.ImagePath))
             {
                 <div>
-                    <img src="@Url.Content($"~/files/Images/{Model.ImagePath}")" alt="Employee Image" class="img-thumbnail" style="max-width: 150px;">
+                    <img src="@Url.Content($"~/Files/Images/{Model.ImagePath}")" alt="Employee Image" class="img-thumbnail" style="max-width: 150px;">
                 </div>
             }
 

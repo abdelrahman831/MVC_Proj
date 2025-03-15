@@ -26,18 +26,18 @@ namespace Demo.BLL.Services.Departments
             _mapper = mapper;
         }
         #region Index
-        public IEnumerable<DepartmentToReturnDto> GetAllDepartments()
+        public async Task<IEnumerable<DepartmentToReturnDto>> GetAllDepartmentsAsync()
         {
 
-            var departments = _unitOfWork.DepartmentRepository.GetAllQuarable().Where(D => !D.IsDeleted).Select(department => _mapper.Map<DepartmentToReturnDto>(department)).AsNoTracking().ToList();
+            var departments = await _unitOfWork.DepartmentRepository.GetAllQuarableAsync().Where(D => !D.IsDeleted).Select(department => _mapper.Map<DepartmentToReturnDto>(department)).AsNoTracking().ToListAsync();
             return departments;
         } 
         #endregion
 
         #region Details
-        public DepartmentDetailsToReturnDto? GetDepartmentsById(int id)
+        public async Task<DepartmentDetailsToReturnDto?> GetDepartmentsByIdAsync(int id)
         {
-            var department = _unitOfWork.DepartmentRepository.GetById(id);
+            var department = await _unitOfWork.DepartmentRepository.GetByIdAsync(id);
             if (department is not null)
             {
                 return _mapper.Map<DepartmentDetailsToReturnDto>(department);
@@ -60,37 +60,37 @@ namespace Demo.BLL.Services.Departments
         #endregion
 
         #region Create
-        public int CreateDepartment(DepartmentToCreateDto department)
+        public async Task<int> CreateDepartmentAsync(DepartmentToCreateDto department)
         {
             var departmentCreated = _mapper.Map<Department>(department);
 
-             _unitOfWork.DepartmentRepository.AddT(departmentCreated);
-            return _unitOfWork.Complete();
+              _unitOfWork.DepartmentRepository.AddTAsync(departmentCreated);
+            return await _unitOfWork.CompleteAsync();
 
         }
         #endregion
 
         #region Update
-        public int UpdateDepartment(DepartmentToUpdateDto department)
+        public async Task<int> UpdateDepartmentAsync(DepartmentToUpdateDto department)
         {
             var departmentUpdated = _mapper.Map<Department>(department);
  
-            _unitOfWork.DepartmentRepository.UpdateT(departmentUpdated);  //Rows Affected 
-            return _unitOfWork.Complete();
+             _unitOfWork.DepartmentRepository.UpdateTAsync(departmentUpdated);  //Rows Affected 
+            return await _unitOfWork.CompleteAsync();
 
         }
         #endregion
 
         #region Delete
-        public bool DeleteDepartment(int id)
+        public async Task<bool> DeleteDepartmentAsync(int id)
         {
-            var department = _unitOfWork.DepartmentRepository.GetById(id);
+            var department =  await _unitOfWork.DepartmentRepository.GetByIdAsync(id);
             if (department is not null)
             {
                 //int RowsAffected = _departmentRepository.DeleteDepartment(department);
                 //return RowsAffected > 0;
-                _unitOfWork.DepartmentRepository.DeleteT(department);  //bool
-                return _unitOfWork.Complete()>0;
+                 _unitOfWork.DepartmentRepository.DeleteTAsync(department);  //bool
+                return await _unitOfWork.CompleteAsync()>0;
 
             }
             return false;

@@ -9,11 +9,11 @@ namespace Demo.BLL.Services.Employees
 {
     public interface IEmployeeService
     {
-        IEnumerable<EmployeeToReturnDto> GetAllEmployees();
-        EmployeeDetailsDto? GetEmployeesById(int id);
-        int CreateEmployee(EmployeeToCreateDto employee);
-        int UpdateEmployee(EmployeeToUpdateDto employee);
-        bool DeleteEmployee(int id);
+        Task<IEnumerable<EmployeeToReturnDto>> GetAllEmployeesAsync();
+        Task<EmployeeDetailsDto?> GetEmployeesByIdAsync(int id);
+        Task<int> CreateEmployeeAsync(EmployeeToCreateDto employee);
+        Task<int> UpdateEmployeeAsync(EmployeeToUpdateDto employee);
+        Task<bool> DeleteEmployeeAsync(int id);
 
     }
 }

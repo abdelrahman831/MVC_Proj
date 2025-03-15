@@ -5,7 +5,6 @@ using Demo.DAL.Presistance.Data;
 using Demo.DAL.Presistance.Repositories.Departments;
 using Demo.DAL.Presistance.Repositories.Employees;
 using Microsoft.EntityFrameworkCore;
-using AutoMapper;
 using Serilog;
 using Demo.PL.Mapping.Profiles;
 using Microsoft.AspNetCore.Builder;
@@ -16,6 +15,8 @@ using Demo.PL.Mapping.Profiles.Departments;
 using Demo.BLL.Mapping.Profiles.Employees;
 using Demo.BLL.Mapping.Profiles.Departments;
 using Demo.BLL.Services.Attacments;
+using Demo.DAL.Entities.Identity;
+using Microsoft.AspNetCore.Identity;
 namespace Demo.PL
 {
     public class Program
@@ -48,7 +49,16 @@ namespace Demo.PL
             builder.Services.AddAutoMapper(typeof(EmployeeProfile));
             builder.Services.AddAutoMapper(typeof(DepartmentServiceMapping));
             builder.Services.AddTransient<IAttacchmentService, AttachmentService>();
-
+            builder.Services.AddAuthentication();
+            builder.Services.AddIdentity<ApplicationUser, IdentityRole>((options) =>
+            {
+                options.Password.RequireDigit = true;
+                options.Password.RequireUppercase = true;
+                options.Password.RequireLowercase = true;
+                options.Password.RequireNonAlphanumeric = true;
+                options.Password.RequiredLength = 5;
+            }
+                ).AddEntityFrameworkStores<ApplicationDbContext>();
 
 
 
@@ -78,7 +88,7 @@ namespace Demo.PL
 
             app.MapControllerRoute(
                 name: "default",
-                pattern: "{controller=Home}/{action=Index}/{id?}");
+                pattern: "{controller=Account}/{action=Register}");
 
             app.Run();
             #region 1 - MVC Project Architecture

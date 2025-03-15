@@ -23,10 +23,10 @@ namespace Demo.PL.Controllers
         }
 
         [HttpGet]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             _logger.Information("Fetching all employees");
-            var employees = _employeeService.GetAllEmployees();
+            var employees = await _employeeService.GetAllEmployeesAsync();
             return View(employees);
         }
 
@@ -35,7 +35,7 @@ namespace Demo.PL.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(EmployeeViewModel employeeVM)
+        public async Task<IActionResult> Create(EmployeeViewModel employeeVM)
         {
             if (!ModelState.IsValid)
             {
@@ -47,7 +47,7 @@ namespace Demo.PL.Controllers
             {
                 _logger.Information("Creating new employee: {@EmployeeVM}", employeeVM);
                 var employeeDto = _mapper.Map<EmployeeToCreateDto>(employeeVM);
-                var result = _employeeService.CreateEmployee(employeeDto);
+                var result =await _employeeService.CreateEmployeeAsync(employeeDto);
 
                 if (result > 0)
                 {
@@ -67,18 +67,18 @@ namespace Demo.PL.Controllers
         }
 
         [HttpGet]
-        public IActionResult Details(int? id)
+        public async Task<IActionResult> Details(int? id)
         {
             if (!id.HasValue)
                 return BadRequest();
 
             _logger.Information("Fetching details for employee ID: {Id}", id);
-            var employee = _employeeService.GetEmployeesById(id.Value);
+            var employee =await _employeeService.GetEmployeesByIdAsync(id.Value);
             return employee == null ? NotFound() : View(employee);
         }
 
         [HttpGet]
-        public IActionResult Edit(int? id)
+        public async Task<IActionResult> Edit(int? id)
         {
             if (!id.HasValue)
                 return BadRequest();
@@ -86,7 +86,7 @@ namespace Demo.PL.Controllers
             try
             {
                 _logger.Information("Fetching employee for edit: ID {Id}", id);
-                var employee = _employeeService.GetEmployeesById(id.Value);
+                var employee =await _employeeService.GetEmployeesByIdAsync(id.Value);
                 return employee == null ? NotFound() : View(_mapper.Map<EmployeeViewModel>(employee));
             }
             catch (Exception ex)
@@ -98,7 +98,7 @@ namespace Demo.PL.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(EmployeeViewModel employeeVM)
+        public async Task<IActionResult> Edit(EmployeeViewModel employeeVM)
         {
             if (!ModelState.IsValid)
             {
@@ -109,7 +109,7 @@ namespace Demo.PL.Controllers
             try
             {
                 _logger.Information("Updating employee: {@EmployeeVM}", employeeVM);
-                var result = _employeeService.UpdateEmployee(_mapper.Map<EmployeeToUpdateDto>(employeeVM));
+                var result =await  _employeeService.UpdateEmployeeAsync(_mapper.Map<EmployeeToUpdateDto>(employeeVM));
                 if (result > 0)
                 {
                     TempData["Message"] = "Employee updated successfully!";
@@ -128,24 +128,24 @@ namespace Demo.PL.Controllers
         }
 
         [HttpGet]
-        public IActionResult Delete(int? id)
+        public async Task<IActionResult> Delete(int? id)
         {
             if (!id.HasValue)
                 return BadRequest();
 
             _logger.Information("Fetching employee for deletion: ID {Id}", id);
-            var employee = _employeeService.GetEmployeesById(id.Value);
+            var employee = await _employeeService.GetEmployeesByIdAsync(id.Value);
             return employee == null ? NotFound() : View(employee);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
             try
             {
                 _logger.Information("Deleting employee: ID {Id}", id);
-                var result = _employeeService.DeleteEmployee(id);
+                var result =await  _employeeService.DeleteEmployeeAsync(id);
                 if (result)
                 {
                     TempData["Message"] = "Employee deleted successfully!";
