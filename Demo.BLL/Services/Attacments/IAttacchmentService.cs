@@ -12,7 +12,7 @@ namespace Demo.BLL.Services.Attacments
 
     {
 
-        public string? Upload(IFormFile file, string folderName);
+        public Task<string?> Upload(IFormFile file, string folderName);
         public bool Delete(string filePath);
     }
 }

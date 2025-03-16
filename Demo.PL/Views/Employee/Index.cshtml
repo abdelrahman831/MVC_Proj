@@ -82,9 +82,7 @@
                         <td>@employee.EmployeeType</td>
                         <td>@employee.Age</td>
                         <td>@employee.Salary</td>
-                        <td>@Departments.FirstOrDefault(d => d.Value == employee.DepartmentId.ToString())?.Text ?? "N/A"
-
-                        </td>
+                        <td>@(Departments.FirstOrDefault(d => d.Value == employee.DepartmentId.ToString())?.Text ?? "No Department")</td>
                         <td>
                             <span class="badge @(employee.IsActive ? "bg-success" : "bg-danger")">
                                 @(employee.IsActive ? "Yes" : "No")

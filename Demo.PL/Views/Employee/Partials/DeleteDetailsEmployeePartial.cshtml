@@ -1,5 +1,10 @@
 ﻿@model EmployeeDetailsDto
+@inject IDepartmentService departmentService
+@{
+    //var departmentList = ViewData["Departments"] as IEnumerable<DepartmentToReturnDto> ?? new List<DepartmentToReturnDto>();
+    var Departments = new SelectList(await departmentService.GetAllDepartmentsAsync(), nameof(DepartmentToReturnDto.Id), nameof(DepartmentToReturnDto.Name));
 
+}
 <br />
 <div class="row justify-content-center align-items-lg-start align-items-center">
     <div class="col-4">
@@ -89,10 +94,10 @@
 
                 </div>
                 @* //-----------// *@
-
                 <div class="form-group col-6">
-                    <label class="form-label" asp-for="DepartmentId"></label>
-                    <input asp-for="DepartmentId" class="form-control" readonly />
+                    <label class="form-label" asp-for="DepartmentId">Department</label>
+                    <input value="@(Departments.FirstOrDefault(d => d.Value == Model.DepartmentId.ToString())?.Text ?? "No Department")"
+                           class="form-control" readonly />
 
                 </div>
                 @* //-----------// *@
@@ -101,6 +106,7 @@
                     <input asp-for="IsActive" class="form-check-input" disabled />
                     <label class="col-form-label" asp-for="IsActive">Is Active</label>
                 </div>
+
             </div>
         </div>
 

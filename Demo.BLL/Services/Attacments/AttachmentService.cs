@@ -21,7 +21,7 @@ namespace Demo.BLL.Services.Attacments
             _logger = logger;
         }
 
-        public string? Upload(IFormFile file, string folderName)
+        public async Task<string?> Upload(IFormFile file, string folderName)
         {
             if (file == null || file.Length == 0)
             {
@@ -56,7 +56,7 @@ namespace Demo.BLL.Services.Attacments
             {
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
-                    file.CopyTo(stream);
+                    await file.CopyToAsync(stream);
                 }
                 _logger.LogInformation("File salvato correttamente: {FilePath}", filePath);
                 return fileName;

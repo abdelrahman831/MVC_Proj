@@ -8,7 +8,7 @@ namespace Demo.PL.ViewModels.Identity
         [Required(ErrorMessage = "Email is Required")]
         [EmailAddress(ErrorMessage = "Invalid Email Address")]
 
-        public string Username { get; set; }
+        public string UserName { get; set; }
         [Required(ErrorMessage = "Password is Required")]
         [DataType(DataType.Password)]
         public string Password { get; set; }

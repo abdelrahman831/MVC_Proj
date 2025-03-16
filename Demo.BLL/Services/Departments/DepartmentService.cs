@@ -15,9 +15,7 @@ namespace Demo.BLL.Services.Departments
 {
     public class DepartmentService : IDepartmentService
     {
-
-
-        public IUnitOfWork _unitOfWork;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
         public DepartmentService(IUnitOfWork unitOfWork,IMapper mapper)

@@ -17,6 +17,7 @@ using Demo.BLL.Mapping.Profiles.Departments;
 using Demo.BLL.Services.Attacments;
 using Demo.DAL.Entities.Identity;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.Cookies;
 namespace Demo.PL
 {
     public class Program
@@ -45,11 +46,9 @@ namespace Demo.PL
 
             builder.Services.AddAutoMapper(M => M.AddProfile(new ViemodelMappingProfiles()));
             builder.Services.AddAutoMapper(M => M.AddProfile(new DepartmentVieModelMappingProfiles()));
-
             builder.Services.AddAutoMapper(typeof(EmployeeProfile));
             builder.Services.AddAutoMapper(typeof(DepartmentServiceMapping));
             builder.Services.AddTransient<IAttacchmentService, AttachmentService>();
-            builder.Services.AddAuthentication();
             builder.Services.AddIdentity<ApplicationUser, IdentityRole>((options) =>
             {
                 options.Password.RequireDigit = true;
@@ -58,8 +57,16 @@ namespace Demo.PL
                 options.Password.RequireNonAlphanumeric = true;
                 options.Password.RequiredLength = 5;
             }
-                ).AddEntityFrameworkStores<ApplicationDbContext>();
+                ).AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
 
+            builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie((option) =>
+            {
+                option.LoginPath = "/Account/Login";
+                option.AccessDeniedPath = "/Home/Error";
+                option.LogoutPath = "/Account/Login";
+            });
+
+            builder.Services.AddAuthorization();
 
 
 

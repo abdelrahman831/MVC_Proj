@@ -2,11 +2,14 @@
 using Demo.BLL.DTOS.Employees;
 using Demo.BLL.Services.Employees;
 using Demo.PL.ViewModels.Employee;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 
 namespace Demo.PL.Controllers
 {
+    [Authorize]
+
     public class EmployeeController : Controller
     {
         private readonly IEmployeeService _employeeService;
@@ -80,53 +83,118 @@ namespace Demo.PL.Controllers
         [HttpGet]
         public async Task<IActionResult> Edit(int? id)
         {
-            if (!id.HasValue)
-                return BadRequest();
+            //if (!id.HasValue)
+            //    return BadRequest();
 
-            try
+            //try
+            //{
+            //    _logger.Information("Fetching employee for edit: ID {Id}", id);
+            //    var employee =await _employeeService.GetEmployeesByIdAsync(id.Value);
+
+            //    return employee == null ? NotFound() : View();
+            //}
+            //catch (Exception ex)
+            //{
+            //    _logger.Error(ex, "Error fetching employee for edit: ID {Id}", id);
+            //    return RedirectToAction("Index");
+            //}
+
+            if (id is null)
             {
-                _logger.Information("Fetching employee for edit: ID {Id}", id);
-                var employee =await _employeeService.GetEmployeesByIdAsync(id.Value);
-                return employee == null ? NotFound() : View(_mapper.Map<EmployeeViewModel>(employee));
+                return BadRequest();
             }
-            catch (Exception ex)
+            var employee = await _employeeService.GetEmployeesByIdAsync(id.Value);
+            if (employee is null)
             {
-                _logger.Error(ex, "Error fetching employee for edit: ID {Id}", id);
-                return RedirectToAction("Index");
+                return NotFound();
             }
+            var employeevm = _mapper.Map<EmployeeDetailsDto, EmployeeViewModel>(employee);
+            //   employeevm.Image = employee.Image;
+            return View(employeevm);
         }
 
+        //[HttpPost]
+        //[ValidateAntiForgeryToken]
+        //public async Task<IActionResult> Edit(EmployeeViewModel employeeVM)
+        //{
+        //    if (!ModelState.IsValid)
+        //    {
+        //        _logger.Warning("Invalid model state for updating EmployeeViewModel: {@EmployeeVM}", employeeVM);
+        //        return View(employeeVM);
+        //    }
+
+        //    try
+        //    {
+        //        _logger.Information("Updating employee: {@EmployeeVM}", employeeVM);
+        //        var result =await  _employeeService.UpdateEmployeeAsync(_mapper.Map<EmployeeToUpdateDto>(employeeVM));
+        //        if (result > 0)
+        //        {
+        //            TempData["Message"] = "Employee updated successfully!";
+        //            return RedirectToAction("Index");
+        //        }
+
+        //        _logger.Warning("Failed to update employee: {@EmployeeVM}", employeeVM);
+        //        ModelState.AddModelError(string.Empty, "Failed to update employee.");
+        //        return View(employeeVM);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.Error(ex, "Error updating employee: {@EmployeeVM}", employeeVM);
+        //        return View("Error", "An error occurred while updating the employee.");
+        //    }
+        //}
+
+
         [HttpPost]
-        [ValidateAntiForgeryToken]
+        [ValidateAntiForgeryToken] //Action Filter
+
         public async Task<IActionResult> Edit(EmployeeViewModel employeeVM)
         {
             if (!ModelState.IsValid)
             {
-                _logger.Warning("Invalid model state for updating EmployeeViewModel: {@EmployeeVM}", employeeVM);
+
                 return View(employeeVM);
             }
-
+            var message = string.Empty;
             try
             {
-                _logger.Information("Updating employee: {@EmployeeVM}", employeeVM);
-                var result =await  _employeeService.UpdateEmployeeAsync(_mapper.Map<EmployeeToUpdateDto>(employeeVM));
-                if (result > 0)
+                var Employeeupdated = _mapper.Map<EmployeeViewModel, EmployeeToUpdateDto>(employeeVM);
+
+                var Result = await _employeeService.UpdateEmployeeAsync(Employeeupdated);
+
+                if (Result > 0)
                 {
-                    TempData["Message"] = "Employee updated successfully!";
+                    TempData["Message"] = "Congratolations! , Employee is Updated";
+
                     return RedirectToAction("Index");
                 }
+                else
+                {
+                    message = "Employee is not updated Ya Man !";
+                    TempData["Message"] = message;
+                    ModelState.AddModelError(string.Empty, message);
+                    return View(employeeVM);
+                }
 
-                _logger.Warning("Failed to update employee: {@EmployeeVM}", employeeVM);
-                ModelState.AddModelError(string.Empty, "Failed to update employee.");
-                return View(employeeVM);
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error updating employee: {@EmployeeVM}", employeeVM);
-                return View("Error", "An error occurred while updating the employee.");
-            }
-        }
+     
+                if (_environment.IsDevelopment())
+                {
+                    message = ex.Message;
+                    return View(employeeVM);
+                }
+                else
+                {
+                    message = "An error occurred while updating the Employee";
+                    return View("Error", message);
 
+                }
+
+            }
+
+        }
         [HttpGet]
         public async Task<IActionResult> Delete(int? id)
         {

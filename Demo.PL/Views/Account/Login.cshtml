@@ -6,6 +6,7 @@
 }
 
 
+
 <body>
     <!-- Split Layout Form -->
     <div class="split-form">
@@ -14,14 +15,21 @@
             <p>Enter your details to access your account</p>
         </div>
         <div class="form-side">
-            <h2>Sign In</h2>
-            <form>
-                <input type="email" placeholder="Email" required>
-                <input type="password" placeholder="Password" required>
-                <button type="submit">Login</button>
+            <h2>Login</h2>
+            <form asp-action="Login">
+                <div asp-validation-summary="All" class="text-danger"></div>
+                <input type="text" asp-for="UserName" placeholder="Enter Yuor First Name" required>
+                <span asp-validation-for="UserName" class="text-danger"></span>
+                <input type="password" asp-for="Password" placeholder="Enter Yuor Password" required>
+                <span asp-validation-for="Password" class="text-danger"></span>
+                <input type="checkbox" asp-for="RememberMe" />
+                <button type="submit">regiter</button>
+
+
             </form>
         </div>
     </div>
+
 
 </body>
 

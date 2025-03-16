@@ -7,7 +7,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Demo.PL.Controllers
 {
-    public class AccountController(UserManager<ApplicationUser> _userManager) : Controller
+    public class AccountController(UserManager<ApplicationUser> _userManager,SignInManager<ApplicationUser> _signinUser) : Controller
     {
 
         [HttpGet]
@@ -53,10 +53,51 @@ namespace Demo.PL.Controllers
         }
 
         [HttpGet]
-        public IActionResult Login(LoginViewModel loginUser)
+        public IActionResult Login()
         {
-            return View(loginUser);
+            return View();
 
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Login(LoginViewModel loginViewModel)
+        {
+            if (ModelState.IsValid)
+            {
+                var user = await _userManager.FindByEmailAsync(loginViewModel.UserName);
+
+                if (user is not null)
+                {
+                    var check = await _userManager.CheckPasswordAsync(user, loginViewModel.Password);
+                    if (check)
+                    {
+                        var sign = await _signinUser.PasswordSignInAsync(user,loginViewModel.Password,loginViewModel.RememberMe,false);
+                        if (sign.Succeeded)
+                        {
+                            return RedirectToAction("Index", "Home");
+                        }
+                    }
+                    else
+                    {
+                        ModelState.AddModelError(string.Empty,"IncorrectPassword");
+                    }
+                }
+                else
+                {
+                    ModelState.AddModelError(string.Empty, "User Name NOt Found");
+
+                }
+
+            }
+
+                return View(loginViewModel);
+            
+        }
+
+        public async Task<IActionResult> LogOut(LoginViewModel loginViewModel)
+        {
+            await _signinUser.SignOutAsync();
+            return RedirectToAction("Login", "Account");
         }
     }
 }

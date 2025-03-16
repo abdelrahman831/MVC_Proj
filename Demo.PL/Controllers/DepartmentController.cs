@@ -2,11 +2,14 @@
 using Demo.BLL.DTOS.Departments;
 using Demo.BLL.Services.Departments;
 using Demo.PL.ViewModels.Department;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 
 namespace Demo.PL.Controllers
 {
+    [Authorize]
+
     public class DepartmentController : Controller
     {
         private readonly IDepartmentService _departmentService;
