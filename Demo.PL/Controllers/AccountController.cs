@@ -4,6 +4,7 @@ using Demo.PL.ViewModels.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Demo.PL.Controllers
@@ -50,6 +51,8 @@ namespace Demo.PL.Controllers
 
                 if (Result.Succeeded)
                 {
+                    TempData["Message"] = "User created successfully!";
+
                     return RedirectToAction("Login");
                 }
                 else
@@ -133,13 +136,19 @@ namespace Demo.PL.Controllers
                     var token = await _userManager.GeneratePasswordResetTokenAsync(user);
 
                     var url = Url.Action("ResetPassword", "Account", new { email = user.Email, token }, Request.Scheme);
-                    var email = new Email()
+                    var email = new Demo.DAL.Entities.Identity.Email()
                     {
                         To = forgetpwdVm.Email,
                         Subject = "Reset Your Password",
                         Body = url
                     };
                     _emailService.SendEmail(email);
+                    TempData["Message"] = "The email was successfully sent";
+
+
+                    TempData["Email"] = user.Email;
+                    TempData["Token"] = token;
+
                     return RedirectToAction("CheckYourInbox");
                     //Send Email 
                 }
@@ -155,8 +164,54 @@ namespace Demo.PL.Controllers
             return View();
         }
 
+        [HttpGet]
+        public IActionResult ResetPassword(string email, string token)
+        {
+            TempData["Email"] = email;
+            TempData["Token"] = token;
 
+          
+                return View();
+   
+        }
 
+        [HttpPost]
+
+        public async Task<IActionResult> ResetPassword(ResetPasswordViewModel resetPasswordViewModel)
+        {
+            if (ModelState.IsValid)
+            {
+                string email = TempData["Email"] as string;
+                string token = TempData["Token"] as string;
+                if (email is not null && token is not null)
+                {
+                    var user = await _userManager.FindByEmailAsync(email);
+                    if (user is not null)
+                    {
+                        var result = await _userManager.ResetPasswordAsync(user, token, resetPasswordViewModel.Password);
+
+                        if (result.Succeeded)
+                        {
+                            TempData["Message"] = "Password reset successfully";
+                            return RedirectToAction("Login");
+                        }
+                        else
+                        {
+
+                            ModelState.AddModelError(string.Empty, "An error occured, please try again");
+
+                        }
+                    }
+
+                    ModelState.AddModelError(string.Empty, "An error occured, please try again");
+
+                }
+                return RedirectToAction("Register");
+
+            }
+            return View(resetPasswordViewModel);
+
+        }
     }
 }
 

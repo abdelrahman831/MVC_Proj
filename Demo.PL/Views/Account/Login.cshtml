@@ -4,7 +4,22 @@
     Layout = "_AuthLayout";
     
 }
-
+@if (!string.IsNullOrEmpty(TempData["Message"] as string))
+{
+    <div aria-live="polite" aria-atomic="true" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050;">
+        <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <img src="~/img/checkmark.png" class="rounded me-2" alt="Success Icon" width="20" height="20">
+                <strong class="me-auto text-primary">Success!</strong>
+                <small class="text-muted">@DateTime.Now.ToString("hh:mm tt")</small>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                @TempData["Message"]
+            </div>
+        </div>
+    </div>
+}
 
 
 <body>
@@ -24,7 +39,7 @@
                 <span asp-validation-for="Password" class="text-danger"></span>
                 <input type="checkbox" asp-for="RememberMe" />
                 <p>Forget your password? <a asp-action="ForgetPassword">Reset it Now</a></p>
-                <button type="submit">regiter</button>
+                <button type="submit">Login</button>
 
 
             </form>
