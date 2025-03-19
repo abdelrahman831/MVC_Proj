@@ -6,18 +6,18 @@
 
 </td>
 <td>
-    <a class="btn btn-success"  asp-action="Edit" asp-route-Id="@Model">
+    <a class="btn btn-success" asp-action="Edit" asp-route-Id="@Model">
         <i class="fas fa-edit"></i> Update
     </a>
 
 </td>
 <td>
-   @*  <a class="btn btn-danger"  asp-action="Delete" asp-route-Id="@Model">
+    @*  <a class="btn btn-danger"  asp-action="Delete" asp-route-Id="@Model">
         <i class="fas fa-trash"></i> Delete
     </a> *@
-    <button type="button" class="btn btn-danger" data-bs-toggle="modal" asp-route-Id="@Model"  data-bs-target="#deleteModal-@Model">
+    <button type="button" class="btn btn-danger" data-bs-toggle="modal" asp-route-Id="@Model" data-bs-target="#deleteModal-@Model">
 
-    <i class="fas fa-trash"></i> Delete
+        <i class="fas fa-trash"></i> Delete
     </button>
 
 </td>

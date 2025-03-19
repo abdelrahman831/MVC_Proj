@@ -23,6 +23,7 @@
                 <input type="password" asp-for="Password" placeholder="Enter Yuor Password" required>
                 <span asp-validation-for="Password" class="text-danger"></span>
                 <input type="checkbox" asp-for="RememberMe" />
+                <p>Forget your password? <a asp-action="ForgetPassword">Reset it Now</a></p>
                 <button type="submit">regiter</button>
 
 

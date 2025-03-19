@@ -14,8 +14,11 @@ namespace Demo.PL.Mapping.Profiles
             CreateMap<EmployeeViewModel, EmployeeToCreateDto>();
             CreateMap<EmployeeViewModel, EmployeeToUpdateDto>();
 
+            //        CreateMap<EmployeeViewModel, EmployeeToUpdateDto>()
+            //.ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id));
 
 
+            CreateMap<EmployeeToCreateDto, EmployeeViewModel>();
 
             CreateMap<EmployeeToCreateDto, Employee>();
 
@@ -23,8 +26,7 @@ namespace Demo.PL.Mapping.Profiles
     .ForSourceMember(src => src.CreatedBy, opt => opt.DoNotValidate())
     .ForSourceMember(src => src.CreatedOn, opt => opt.DoNotValidate())
     .ForSourceMember(src => src.LastModifiedBy, opt => opt.DoNotValidate())
-    .ForSourceMember(src => src.LastModifiedOn, opt => opt.DoNotValidate())
-    .ForSourceMember(src => src.IsDeleted, opt => opt.DoNotValidate());
+    .ForSourceMember(src => src.LastModifiedOn, opt => opt.DoNotValidate());
 
 
 
@@ -32,15 +34,7 @@ namespace Demo.PL.Mapping.Profiles
 
         }
 
-        private string ConvertFileToBase64(IFormFile file)
-{
-    using (var memoryStream = new MemoryStream())
-    {
-        file.CopyTo(memoryStream);
-        byte[] fileBytes = memoryStream.ToArray();
-        return Convert.ToBase64String(fileBytes);
-    }
-}
+
 
 
     }

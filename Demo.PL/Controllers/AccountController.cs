@@ -1,4 +1,5 @@
-﻿using Demo.DAL.Entities.Identity;
+﻿using Demo.BLL.Services.EmailService;
+using Demo.DAL.Entities.Identity;
 using Demo.PL.ViewModels.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -7,8 +8,20 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Demo.PL.Controllers
 {
-    public class AccountController(UserManager<ApplicationUser> _userManager,SignInManager<ApplicationUser> _signinUser) : Controller
+    public class AccountController : Controller
     {
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly SignInManager<ApplicationUser> _signinUser;
+        private readonly IEmailService _emailService;
+
+        public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IEmailService emailSettings)
+        {
+            _userManager = userManager;
+            _signinUser = signInManager;
+            _emailService = emailSettings;
+        }
+
+
 
         [HttpGet]
         public IActionResult Register()
@@ -99,5 +112,49 @@ namespace Demo.PL.Controllers
             await _signinUser.SignOutAsync();
             return RedirectToAction("Login", "Account");
         }
-    }
+
+        [HttpGet]
+        public IActionResult ForgetPassword()
+        {
+            return View();
+        }
+
+        [HttpPost]
+
+        public async Task<IActionResult> SendResetPasswordUrl(ForgetPasswordViewModel forgetpwdVm)
+        {
+            if (ModelState.IsValid)
+            {
+
+                var user = await _userManager.FindByEmailAsync(forgetpwdVm.Email);
+                if (user is not null)
+
+                {
+                    var token = _userManager.GeneratePasswordResetTokenAsync(user);
+
+                    var url = Url.Action("ResetPassword", "Account", new { email = user.Email, token = token }, Request.Scheme);
+                    var email = new Email()
+                    {
+                        To = forgetpwdVm.Email,
+                        Subject = "Reset Your Password",
+                        Body = url
+                    };
+                    _emailService.sendEmail(email);
+                    return RedirectToAction("CheckYourInbox");
+                    //Send Email 
+                }
+                ModelState.AddModelError(string.Empty, "Invalid operation");
+
+            }
+
+            return View(forgetpwdVm);
+        }
+
+            public IActionResult CheckYourInbox()
+        {
+            return View();
+        }
+
+        }
 }
+

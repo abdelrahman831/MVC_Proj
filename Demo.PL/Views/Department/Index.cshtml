@@ -1,6 +1,8 @@
 ﻿@model IEnumerable<DepartmentToReturnDto>
 @{
     ViewData["Title"] = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
     // View data ==> Enforce type - strongly type
     //View Bag ==> 4.0 Can not enforce type safety -weakly Type
     string? viewDataMsg = ViewData["Message"] as string;  // [compilation time]

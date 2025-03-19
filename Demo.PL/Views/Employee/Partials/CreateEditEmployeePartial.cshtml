@@ -6,8 +6,9 @@
 
 }
 
-<form asp-controller="Employee" asp-action="@ViewBag.Action" method="post" enctype="multipart/form-data" class="mb-5 pb-5">
-    <div asp-validation-summary="ModelOnly">    </div>
+<form asp-controller="Employee" asp-action="@ViewBag.Action" method="post" asp-route-id="@Model?.Id" enctype="multipart/form-data" class="mb-5 pb-5">
+    <div asp-validation-summary="ModelOnly">  </div>
+
 
     <div class="row">
         <!-- Name Field -->

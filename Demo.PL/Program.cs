@@ -18,6 +18,7 @@ using Demo.BLL.Services.Attacments;
 using Demo.DAL.Entities.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Demo.BLL.Services.EmailService;
 namespace Demo.PL
 {
     public class Program
@@ -49,6 +50,8 @@ namespace Demo.PL
             builder.Services.AddAutoMapper(typeof(EmployeeProfile));
             builder.Services.AddAutoMapper(typeof(DepartmentServiceMapping));
             builder.Services.AddTransient<IAttacchmentService, AttachmentService>();
+            builder.Services.AddScoped<IEmailService, EmailService>();
+
             builder.Services.AddIdentity<ApplicationUser, IdentityRole>((options) =>
             {
                 options.Password.RequireDigit = true;
@@ -59,15 +62,15 @@ namespace Demo.PL
             }
                 ).AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
 
-            builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie((option) =>
+            builder.Services.ConfigureApplicationCookie(config =>
             {
-                option.LoginPath = "/Account/Login";
-                option.AccessDeniedPath = "/Home/Error";
-                option.LogoutPath = "/Account/Login";
+                config.ExpireTimeSpan = TimeSpan.FromDays(2);
+                config.LoginPath = "/Account/Login";
+                config.LogoutPath = "/Account/Logout";
+                config.AccessDeniedPath = "/Home/Error";
             });
 
             builder.Services.AddAuthorization();
-
 
 
 
