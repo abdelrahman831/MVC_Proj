@@ -37,9 +37,9 @@ namespace Demo.PL
                 //  options.UseSqlServer(builder.Configuration.GetSection("ConnectionStrings")["DefaultConnection"]);  //old Way
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));  //New Way
 
-            },ServiceLifetime.Scoped);
+            }, ServiceLifetime.Scoped);
             //builder.Services.AddScoped<IDepartmentRepository, DepartmentRepository>();
-            builder.Services.AddScoped<IUnitOfWork,UnitOfWork>();
+            builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
             //builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 
             builder.Services.AddScoped<IDepartmentService, DepartmentService>();
@@ -93,7 +93,7 @@ namespace Demo.PL
             app.UseStaticFiles();
 
             app.UseRouting();
-
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.MapControllerRoute(
@@ -199,6 +199,6 @@ namespace Demo.PL
             #region 8 - RelationShip Between Department & Employee Part 2
 
             #endregion
-        }
+        }
     }
 }

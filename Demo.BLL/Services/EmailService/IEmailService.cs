@@ -9,6 +9,6 @@ namespace Demo.BLL.Services.EmailService
 {
     public interface IEmailService
     {
-        public void sendEmail(Email email) { }
+        public void SendEmail(Email email) { }
     }
 }

@@ -45,8 +45,8 @@ namespace Demo.PL.Controllers
                     IsAgree = registerViewModel.IsAgree,
 
                 };
-                    
-                var Result = await _userManager.CreateAsync(newUser,registerViewModel.Password);
+
+                var Result = await _userManager.CreateAsync(newUser, registerViewModel.Password);
 
                 if (Result.Succeeded)
                 {
@@ -84,7 +84,7 @@ namespace Demo.PL.Controllers
                     var check = await _userManager.CheckPasswordAsync(user, loginViewModel.Password);
                     if (check)
                     {
-                        var sign = await _signinUser.PasswordSignInAsync(user,loginViewModel.Password,loginViewModel.RememberMe,false);
+                        var sign = await _signinUser.PasswordSignInAsync(user, loginViewModel.Password, loginViewModel.RememberMe, false);
                         if (sign.Succeeded)
                         {
                             return RedirectToAction("Index", "Home");
@@ -92,7 +92,7 @@ namespace Demo.PL.Controllers
                     }
                     else
                     {
-                        ModelState.AddModelError(string.Empty,"IncorrectPassword");
+                        ModelState.AddModelError(string.Empty, "IncorrectPassword");
                     }
                 }
                 else
@@ -103,8 +103,8 @@ namespace Demo.PL.Controllers
 
             }
 
-                return View(loginViewModel);
-            
+            return View(loginViewModel);
+
         }
 
         public async Task<IActionResult> LogOut(LoginViewModel loginViewModel)
@@ -130,16 +130,16 @@ namespace Demo.PL.Controllers
                 if (user is not null)
 
                 {
-                    var token = _userManager.GeneratePasswordResetTokenAsync(user);
+                    var token = await _userManager.GeneratePasswordResetTokenAsync(user);
 
-                    var url = Url.Action("ResetPassword", "Account", new { email = user.Email, token = token }, Request.Scheme);
+                    var url = Url.Action("ResetPassword", "Account", new { email = user.Email, token }, Request.Scheme);
                     var email = new Email()
                     {
                         To = forgetpwdVm.Email,
                         Subject = "Reset Your Password",
                         Body = url
                     };
-                    _emailService.sendEmail(email);
+                    _emailService.SendEmail(email);
                     return RedirectToAction("CheckYourInbox");
                     //Send Email 
                 }
@@ -150,11 +150,11 @@ namespace Demo.PL.Controllers
             return View(forgetpwdVm);
         }
 
-            public IActionResult CheckYourInbox()
+        public IActionResult CheckYourInbox()
         {
             return View();
         }
 
-        }
+    }
 }
 
