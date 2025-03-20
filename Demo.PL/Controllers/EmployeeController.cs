@@ -5,6 +5,7 @@ using Demo.DAL.Entities.Employees;
 using Demo.PL.ViewModels.Employee;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 namespace Demo.PL.Controllers
@@ -26,6 +27,7 @@ namespace Demo.PL.Controllers
             _environment = environment;
         }
 
+
         [HttpGet]
         public async Task<IActionResult> SearchEmployees(string searchValue)
         {
@@ -33,27 +35,15 @@ namespace Demo.PL.Controllers
 
             if (!string.IsNullOrWhiteSpace(searchValue))
             {
+                searchValue = searchValue.ToLower();
                 employees = employees
-        .Where(e => e.Name.ToLower().Contains(searchValue.ToLower()))
-        .ToList();
+                    .Where(e => e.Name.ToLower().Contains(searchValue) || e.Email.ToLower().Contains(searchValue));
             }
 
-            var results = employees.Select(e => new
-            {
-                e.Id,
-                e.Name,
-                e.Email,
-                e.EmployeeType,
-                e.Age,
-                e.Salary,
-                e.Gender,
-                e.ImagePath,
-                e.IsActive,
-                Department = e.DepartmentId.ToString()
-            }).ToList();
+            return PartialView("~/Views/Employee/Partials/_EmployeeTablePartial.cshtml", employees);
 
-            return Json(new { results });
         }
+
 
 
         [HttpGet]

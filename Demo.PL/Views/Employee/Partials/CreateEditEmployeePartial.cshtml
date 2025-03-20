@@ -54,7 +54,8 @@
         <!-- Salary Field -->
         <div class="form-group col-6">
             <label asp-for="Salary" class="form-label">Salary</label>
-            <input asp-for="Salary" class="form-control">
+            <input asp-for="Salary" class="form-control" type="number" step="0.01">
+
             <span asp-validation-for="Salary" class="text-danger"></span>
         </div>
         <!-- Gender Field -->
@@ -108,7 +109,7 @@
         @* //-----------// *@
 
         <div class="form-group mb-3">
-            <input asp-for="IsActive" class="form-check-input" />
+            <input asp-for="IsActive"  type="checkbox" />
             <label class="col-form-label" asp-for="IsActive">
                 I agree to all the terms and conditions and the  <a class="text-decoration-none" asp-controller="Home" asp-action="Privacy">privacy</a> policy of the website
             </label>

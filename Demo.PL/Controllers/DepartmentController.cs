@@ -25,6 +25,23 @@ namespace Demo.PL.Controllers
             _environment = environment;
         }
 
+
+        [HttpGet]
+        public async Task<IActionResult> SearchDepartments(string searchValue)
+        {
+            var department = await _departmentService.GetAllDepartmentsAsync();
+
+            if (!string.IsNullOrWhiteSpace(searchValue))
+            {
+                searchValue = searchValue.ToLower();
+                department = department
+                    .Where(e => e.Name.ToLower().Contains(searchValue) || e.Code.ToLower().Contains(searchValue));
+            }
+
+            return PartialView("~/Views/Department/Partials/_DepartmentTablePartial.cshtml", department);
+
+        }
+
         [HttpGet]
         public async Task<IActionResult> Index()
         {

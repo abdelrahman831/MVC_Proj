@@ -24,11 +24,13 @@ namespace Demo.PL.Controllers
 
 
 
+        #region Register Get
         [HttpGet]
         public IActionResult Register()
         {
             return View();
-        }
+        } 
+        #endregion
 
 
         [HttpPost]
@@ -57,10 +59,10 @@ namespace Demo.PL.Controllers
                 }
                 else
                 {
-                    foreach (var error in Result.Errors)
-                    {
-                        ModelState.AddModelError(string.Empty, error.Description);
-                    }
+
+                    TempData["Error"] = Result.Errors.Select(e => e.Description).ToList();
+
+
                 }
             }
             return View(registerViewModel);
@@ -96,11 +98,17 @@ namespace Demo.PL.Controllers
                     else
                     {
                         ModelState.AddModelError(string.Empty, "IncorrectPassword");
+                        
+                        TempData["Message"] = "IncorrectPassword";
+
                     }
                 }
                 else
                 {
                     ModelState.AddModelError(string.Empty, "User Name NOt Found");
+                    TempData["Message"] = "UserNameNotFount";
+
+
 
                 }
 

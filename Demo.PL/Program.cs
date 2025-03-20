@@ -98,7 +98,7 @@ namespace Demo.PL
 
             app.MapControllerRoute(
                 name: "default",
-                pattern: "{controller=Account}/{action=Register}");
+                pattern: "{controller=Home}/{action=Index}");
 
             app.Run();
             #region 1 - MVC Project Architecture

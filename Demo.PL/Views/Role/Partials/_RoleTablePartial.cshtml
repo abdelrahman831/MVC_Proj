@@ -1,0 +1,10 @@
+﻿@model IEnumerable<RoleViewModel>
+
+@foreach (var role in Model)
+{
+    <tr>
+
+        <td>@role.Name</td>
+        <partial name="_ButtonsPartial" model="@role.Id" />
+    </tr>
+}

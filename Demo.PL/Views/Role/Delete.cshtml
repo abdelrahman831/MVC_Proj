@@ -1,0 +1,18 @@
+﻿@model RoleViewModel
+@{
+    ViewData["Title"] = "Delete";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+}
+
+<h1 class="my-4 w-50 mx-auto text-center fw-bold border-bottom pb-3">Delete Employee </h1>
+<partial name="Partials/DeleteDetailsRolePartial" />
+
+@*   Way02 Delete
+ *@
+@*      <div class="d-flex justify-content-center gap-3 mt-3">
+    <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-success" style="background-color: #6a0dad; border-color: #6a0dad;">Delete</a>
+
+    <a asp-controller="Employee" asp-action="Index" class="btn btn-outline-secondary px-4">Cancel</a>
+</div>
+ *@

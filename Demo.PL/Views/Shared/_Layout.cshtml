@@ -13,9 +13,7 @@
 
     <!-- Bootstrap & Styles -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/Demo.PL.styles.css" asp-append-version="true" />
+ <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" /> 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
           integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
@@ -156,6 +154,9 @@
         main {
             padding: 2rem 0;
         }
+
+        /* Responsive Styling */
+
     </style>
 </head>
 <body>
@@ -184,12 +185,28 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" asp-controller="Employee" asp-action="Index">
-                                <i class="fas fa-users"></i> Employees
+                                <i class="fa-solid fa-address-card"></i> Employees
                             </a>
                         </li>
+                        @if(User.IsInRole("Admin"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="User" asp-action="Index">
+                                    <i class="fa-solid fa-users"></i> Users
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Role" asp-action="Index">
+                                    <i class="fa-solid fa-pen-ruler"></i> Roles
+                                </a>
+                            </li>
+                        }
+
+
+
                         <li class="nav-item">
                             <a class="nav-link" asp-controller="Account" asp-action="Logout">
-                                <i class="fas fa-users"></i> LogOut
+                                <i class="fa-solid fa-right-from-bracket"></i>
                             </a>
                         </li>
                     </ul>
@@ -201,7 +218,7 @@
 
     <div class="container">
         <main role="main" class="pb-3">
-            @RenderBody();
+            @RenderBody()
         </main>
     </div>
 

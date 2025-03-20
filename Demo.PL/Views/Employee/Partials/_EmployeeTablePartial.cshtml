@@ -1,0 +1,42 @@
+﻿@model IEnumerable<EmployeeToReturnDto>
+@inject IDepartmentService departmentService
+@{
+    //var departmentList = ViewData["Departments"] as IEnumerable<DepartmentToReturnDto> ?? new List<DepartmentToReturnDto>();
+    var Departments = new SelectList(await departmentService.GetAllDepartmentsAsync(), nameof(DepartmentToReturnDto.Id), nameof(DepartmentToReturnDto.Name));
+
+}
+@foreach (var employee in Model)
+{
+    <tr>
+        <td><img src="~/Files/Images/@(employee.ImagePath ?? "NotFound.png")" class="rounded-circle" width="40" height="40" /></td>
+        <td>@employee.Name</td>
+        <td>@employee.Email</td>
+        <td>@employee.EmployeeType</td>
+        <td>@employee.Age</td>
+        <td>@employee.Salary</td>
+        <td>
+            @if (employee.DepartmentId == null)
+            {
+
+                    <p>No Department</p>
+
+            }
+            else
+            {
+                <a asp-controller="Department" asp-action="Details" asp-route-id="@employee.DepartmentId.ToString()" class="text-primary fw-bold">
+                    @(Departments.FirstOrDefault(d => d.Value == employee.DepartmentId.ToString()).Text)
+                </a>
+            }
+
+        </td>
+
+
+        <td>
+            <span class="badge @(employee.IsActive ? "bg-success" : "bg-danger")">
+                @(employee.IsActive ? "Yes" : "No")
+            </span>
+        </td>
+        <td>@employee.Gender</td>
+        <partial name="_ButtonsPartial" model="@employee.Id.ToString()" />
+    </tr>
+}
