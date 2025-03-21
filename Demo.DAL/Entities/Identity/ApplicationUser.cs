@@ -13,8 +13,9 @@ namespace Demo.DAL.Entities.Identity
 
 
         public string LName { get; set; }
-
-
+        public DateTime? LastLogin { get; set; }
+        public DateTime? LastActivity { get; set; }
+        public DateTime? CreatedAt { get; set; }
 
         public bool IsAgree { get; set; }
     }

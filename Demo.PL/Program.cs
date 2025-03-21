@@ -44,6 +44,11 @@ namespace Demo.PL
 
             builder.Services.AddScoped<IDepartmentService, DepartmentService>();
             builder.Services.AddScoped<IEmployeeService, EmployeeService>();
+            builder.Services.AddScoped<UserActivityFilter>();
+            builder.Services.AddControllersWithViews(options =>
+            {
+                options.Filters.Add<UserActivityFilter>();
+            }); 
 
             builder.Services.AddAutoMapper(M => M.AddProfile(new ViemodelMappingProfiles()));
             builder.Services.AddAutoMapper(M => M.AddProfile(new DepartmentVieModelMappingProfiles()));

@@ -14,13 +14,16 @@ namespace Demo.PL.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signinUser;
         private readonly IEmailService _emailService;
+        private readonly RoleManager<ApplicationUser> _roleManager;
 
+        #region Ctor Ingection
         public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IEmailService emailSettings)
         {
             _userManager = userManager;
             _signinUser = signInManager;
             _emailService = emailSettings;
-        }
+        } 
+        #endregion
 
 
 
@@ -29,10 +32,11 @@ namespace Demo.PL.Controllers
         public IActionResult Register()
         {
             return View();
-        } 
+        }
         #endregion
 
 
+        #region Register Post
         [HttpPost]
         public async Task<IActionResult> Register(RegisterViewModel registerViewModel)
         {
@@ -44,7 +48,7 @@ namespace Demo.PL.Controllers
                     Email = registerViewModel.Email,
                     FName = registerViewModel.FName,
                     LName = registerViewModel.LName,
-
+                    CreatedAt = DateTime.Now,
                     IsAgree = registerViewModel.IsAgree,
 
                 };
@@ -53,6 +57,7 @@ namespace Demo.PL.Controllers
 
                 if (Result.Succeeded)
                 {
+                    await _userManager.AddToRoleAsync(newUser, "User");
                     TempData["Message"] = "User created successfully!";
 
                     return RedirectToAction("Login");
@@ -69,14 +74,18 @@ namespace Demo.PL.Controllers
 
 
         }
+        #endregion
 
+        #region Login Get
         [HttpGet]
         public IActionResult Login()
         {
             return View();
 
         }
+        #endregion
 
+        #region Login Post
         [HttpPost]
         public async Task<IActionResult> Login(LoginViewModel loginViewModel)
         {
@@ -92,13 +101,15 @@ namespace Demo.PL.Controllers
                         var sign = await _signinUser.PasswordSignInAsync(user, loginViewModel.Password, loginViewModel.RememberMe, false);
                         if (sign.Succeeded)
                         {
+                            user.LastLogin = DateTime.Now;
+                            await _userManager.UpdateAsync(user);
                             return RedirectToAction("Index", "Home");
                         }
                     }
                     else
                     {
                         ModelState.AddModelError(string.Empty, "IncorrectPassword");
-                        
+
                         TempData["Message"] = "IncorrectPassword";
 
                     }
@@ -117,19 +128,27 @@ namespace Demo.PL.Controllers
             return View(loginViewModel);
 
         }
+        #endregion
 
+
+        #region LogOut
+        [HttpGet]
         public async Task<IActionResult> LogOut(LoginViewModel loginViewModel)
         {
             await _signinUser.SignOutAsync();
             return RedirectToAction("Login", "Account");
         }
+        #endregion
 
+        #region ForgetPassword Get
         [HttpGet]
         public IActionResult ForgetPassword()
         {
             return View();
         }
+        #endregion
 
+        #region Send Reset Password Post
         [HttpPost]
 
         public async Task<IActionResult> SendResetPasswordUrl(ForgetPasswordViewModel forgetpwdVm)
@@ -166,23 +185,30 @@ namespace Demo.PL.Controllers
 
             return View(forgetpwdVm);
         }
+        #endregion
 
+        #region Check Your Inbox Get
+        [HttpGet]
         public IActionResult CheckYourInbox()
         {
             return View();
         }
+        #endregion
 
+        #region Reset Password Get
         [HttpGet]
         public IActionResult ResetPassword(string email, string token)
         {
             TempData["Email"] = email;
             TempData["Token"] = token;
 
-          
-                return View();
-   
-        }
 
+            return View();
+
+        }
+        #endregion
+
+        #region Reset Password Post
         [HttpPost]
 
         public async Task<IActionResult> ResetPassword(ResetPasswordViewModel resetPasswordViewModel)
@@ -219,7 +245,8 @@ namespace Demo.PL.Controllers
             }
             return View(resetPasswordViewModel);
 
-        }
+        } 
+        #endregion
     }
 }
 
