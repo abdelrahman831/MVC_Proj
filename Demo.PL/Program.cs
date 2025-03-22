@@ -78,10 +78,8 @@ namespace Demo.PL
             builder.Services.AddAuthorization();
 
 
+            Log.Logger = new LoggerConfiguration().WriteTo.File("logs/myapp.txt", rollingInterval: RollingInterval.Day).CreateLogger();
 
-            Log.Logger = new LoggerConfiguration().WriteTo.File("logs/app-log.txt", rollingInterval: RollingInterval.Day)
-            .CreateLogger();
-            //builder.Host.UseSerilog();
             //builder.Host.UseSerilog();
 
             var app = builder.Build();
