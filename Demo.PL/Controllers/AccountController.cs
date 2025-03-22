@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
 using static System.Runtime.InteropServices.JavaScript.JSType;
-
+using System.Security.Claims;
 namespace Demo.PL.Controllers
 {
     public class AccountController : Controller
@@ -22,7 +22,7 @@ namespace Demo.PL.Controllers
             _userManager = userManager;
             _signinUser = signInManager;
             _emailService = emailSettings;
-        } 
+        }
         #endregion
 
 
@@ -135,6 +135,18 @@ namespace Demo.PL.Controllers
         [HttpGet]
         public async Task<IActionResult> LogOut(LoginViewModel loginViewModel)
         {
+
+            ClaimsPrincipal currentUser = this.User;
+            var user = await _userManager.GetUserAsync(currentUser);
+
+
+
+            if (user is not null)
+            {
+                user.LastLogin = null;
+                await _userManager.UpdateAsync(user);
+            }
+
             await _signinUser.SignOutAsync();
             return RedirectToAction("Login", "Account");
         }
@@ -245,7 +257,7 @@ namespace Demo.PL.Controllers
             }
             return View(resetPasswordViewModel);
 
-        } 
+        }
         #endregion
     }
 }

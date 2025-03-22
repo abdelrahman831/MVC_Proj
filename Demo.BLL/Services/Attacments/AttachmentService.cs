@@ -10,7 +10,7 @@ namespace Demo.BLL.Services.Attacments
     public class AttachmentService : IAttacchmentService
     {
         private readonly List<string> _allowedExtensions = new() { ".png", ".jpg", ".jpeg" };
-        private const int _maxAllowedSize = 2_097_152; // 2MB
+        private const int _maxAllowedSize = 10_097_152; // 2MB
 
         private readonly IWebHostEnvironment _env;
         private readonly ILogger<AttachmentService> _logger;
