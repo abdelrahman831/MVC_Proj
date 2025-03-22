@@ -15,6 +15,8 @@ namespace Demo.PL.Controllers
         private readonly SignInManager<ApplicationUser> _signinUser;
         private readonly IEmailService _emailService;
         private readonly RoleManager<ApplicationUser> _roleManager;
+        private readonly Serilog.ILogger _logger;
+
 
         #region Ctor Ingection
         public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IEmailService emailSettings)
@@ -36,45 +38,7 @@ namespace Demo.PL.Controllers
         #endregion
 
 
-        #region Register Post
-        [HttpPost]
-        public async Task<IActionResult> Register(RegisterViewModel registerViewModel)
-        {
-            if (ModelState.IsValid)
-            {
-                var newUser = new ApplicationUser()
-                {
-                    UserName = registerViewModel.Email,
-                    Email = registerViewModel.Email,
-                    FName = registerViewModel.FName,
-                    LName = registerViewModel.LName,
-                    CreatedAt = DateTime.Now,
-                    IsAgree = registerViewModel.IsAgree,
-
-                };
-
-                var Result = await _userManager.CreateAsync(newUser, registerViewModel.Password);
-
-                if (Result.Succeeded)
-                {
-                    await _userManager.AddToRoleAsync(newUser, "User");
-                    TempData["Message"] = "User created successfully!";
-
-                    return RedirectToAction("Login");
-                }
-                else
-                {
-
-                    TempData["Error"] = Result.Errors.Select(e => e.Description).ToList();
-
-
-                }
-            }
-            return View(registerViewModel);
-
-
-        }
-        #endregion
+       
 
         #region Login Get
         [HttpGet]
@@ -85,50 +49,7 @@ namespace Demo.PL.Controllers
         }
         #endregion
 
-        #region Login Post
-        [HttpPost]
-        public async Task<IActionResult> Login(LoginViewModel loginViewModel)
-        {
-            if (ModelState.IsValid)
-            {
-                var user = await _userManager.FindByEmailAsync(loginViewModel.UserName);
-
-                if (user is not null)
-                {
-                    var check = await _userManager.CheckPasswordAsync(user, loginViewModel.Password);
-                    if (check)
-                    {
-                        var sign = await _signinUser.PasswordSignInAsync(user, loginViewModel.Password, loginViewModel.RememberMe, false);
-                        if (sign.Succeeded)
-                        {
-                            user.LastLogin = DateTime.Now;
-                            await _userManager.UpdateAsync(user);
-                            return RedirectToAction("Index", "Home");
-                        }
-                    }
-                    else
-                    {
-                        ModelState.AddModelError(string.Empty, "IncorrectPassword");
-
-                        TempData["Message"] = "IncorrectPassword";
-
-                    }
-                }
-                else
-                {
-                    ModelState.AddModelError(string.Empty, "User Name NOt Found");
-                    TempData["Message"] = "UserNameNotFount";
-
-
-
-                }
-
-            }
-
-            return View(loginViewModel);
-
-        }
-        #endregion
+        
 
 
         #region LogOut
@@ -160,44 +81,7 @@ namespace Demo.PL.Controllers
         }
         #endregion
 
-        #region Send Reset Password Post
-        [HttpPost]
-
-        public async Task<IActionResult> SendResetPasswordUrl(ForgetPasswordViewModel forgetpwdVm)
-        {
-            if (ModelState.IsValid)
-            {
-
-                var user = await _userManager.FindByEmailAsync(forgetpwdVm.Email);
-                if (user is not null)
-
-                {
-                    var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-
-                    var url = Url.Action("ResetPassword", "Account", new { email = user.Email, token }, Request.Scheme);
-                    var email = new Demo.DAL.Entities.Identity.Email()
-                    {
-                        To = forgetpwdVm.Email,
-                        Subject = "Reset Your Password",
-                        Body = url
-                    };
-                    _emailService.SendEmail(email);
-                    TempData["Message"] = "The email was successfully sent";
-
-
-                    TempData["Email"] = user.Email;
-                    TempData["Token"] = token;
-
-                    return RedirectToAction("CheckYourInbox");
-                    //Send Email 
-                }
-                ModelState.AddModelError(string.Empty, "Invalid operation");
-
-            }
-
-            return View(forgetpwdVm);
-        }
-        #endregion
+       
 
         #region Check Your Inbox Get
         [HttpGet]
@@ -222,43 +106,167 @@ namespace Demo.PL.Controllers
 
         #region Reset Password Post
         [HttpPost]
-
         public async Task<IActionResult> ResetPassword(ResetPasswordViewModel resetPasswordViewModel)
         {
+            _logger.Information("Starting password reset process");
             if (ModelState.IsValid)
             {
                 string email = TempData["Email"] as string;
                 string token = TempData["Token"] as string;
+                _logger.Information($"Retrieved TempData - Email: {email}, Token: {token}");
+
                 if (email is not null && token is not null)
                 {
                     var user = await _userManager.FindByEmailAsync(email);
                     if (user is not null)
                     {
+                        _logger.Information($"User found for email {email}, attempting password reset");
                         var result = await _userManager.ResetPasswordAsync(user, token, resetPasswordViewModel.Password);
 
                         if (result.Succeeded)
                         {
+                            _logger.Information("Password reset successfully");
                             TempData["Message"] = "Password reset successfully";
                             return RedirectToAction("Login");
                         }
                         else
                         {
-
-                            ModelState.AddModelError(string.Empty, "An error occured, please try again");
-
+                            _logger.Error("Password reset failed due to an error in UserManager");
+                            ModelState.AddModelError(string.Empty, "An error occurred, please try again");
                         }
                     }
-
-                    ModelState.AddModelError(string.Empty, "An error occured, please try again");
-
+                    else
+                    {
+                        _logger.Error("User not found for password reset");
+                    }
                 }
+                _logger.Warning("Email or token missing in TempData, redirecting to Register");
                 return RedirectToAction("Register");
-
             }
+            _logger.Warning("Model state is invalid, returning ResetPassword view");
             return View(resetPasswordViewModel);
-
         }
         #endregion
+
+        #region Send Reset Password Post
+        [HttpPost]
+        public async Task<IActionResult> SendResetPasswordUrl(ForgetPasswordViewModel forgetpwdVm)
+        {
+            _logger.Information("Starting password reset email process");
+            if (ModelState.IsValid)
+            {
+                var user = await _userManager.FindByEmailAsync(forgetpwdVm.Email);
+                if (user is not null)
+                {
+                    _logger.Information($"User found for email {forgetpwdVm.Email}, generating reset token");
+                    var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+
+                    var url = Url.Action("ResetPassword", "Account", new { email = user.Email, token }, Request.Scheme);
+                    _logger.Information($"Generated password reset URL: {url}");
+
+                    var email = new Demo.DAL.Entities.Identity.Email()
+                    {
+                        To = forgetpwdVm.Email,
+                        Subject = "Reset Your Password",
+                        Body = url
+                    };
+                    _emailService.SendEmail(email);
+                    _logger.Information("Password reset email sent successfully");
+
+                    TempData["Message"] = "The email was successfully sent";
+                    TempData["Email"] = user.Email;
+                    TempData["Token"] = token;
+
+                    return RedirectToAction("CheckYourInbox");
+                }
+                _logger.Warning($"User not found for email {forgetpwdVm.Email}");
+                ModelState.AddModelError(string.Empty, "Invalid operation");
+            }
+            _logger.Warning("Model state is invalid, returning ForgetPassword view");
+            return View(forgetpwdVm);
+        }
+        #endregion
+
+        #region Login Post
+        [HttpPost]
+        public async Task<IActionResult> Login(LoginViewModel loginViewModel)
+        {
+            _logger.Information("Starting login process");
+            if (ModelState.IsValid)
+            {
+                var user = await _userManager.FindByEmailAsync(loginViewModel.UserName);
+                if (user is not null)
+                {
+                    _logger.Information($"User found for email {loginViewModel.UserName}, verifying password");
+                    var check = await _userManager.CheckPasswordAsync(user, loginViewModel.Password);
+                    if (check)
+                    {
+                        _logger.Information("Password verification succeeded, signing in user");
+                        var sign = await _signinUser.PasswordSignInAsync(user, loginViewModel.Password, loginViewModel.RememberMe, false);
+                        if (sign.Succeeded)
+                        {
+                            user.LastLogin = DateTime.Now;
+                            await _userManager.UpdateAsync(user);
+                            _logger.Information($"User {user.Email} logged in successfully");
+                            return RedirectToAction("Index", "Home");
+                        }
+                    }
+                    else
+                    {
+                        _logger.Warning("Password verification failed");
+                        ModelState.AddModelError(string.Empty, "IncorrectPassword");
+                        TempData["Message"] = "IncorrectPassword";
+                    }
+                }
+                else
+                {
+                    _logger.Warning($"User not found for email {loginViewModel.UserName}");
+                    ModelState.AddModelError(string.Empty, "User Name Not Found");
+                    TempData["Message"] = "UserNameNotFound";
+                }
+            }
+            _logger.Warning("Model state is invalid, returning Login view");
+            return View(loginViewModel);
+        }
+        #endregion
+
+        #region Register Post
+        [HttpPost]
+        public async Task<IActionResult> Register(RegisterViewModel registerViewModel)
+        {
+            _logger.Information("Starting user registration process");
+            if (ModelState.IsValid)
+            {
+                _logger.Information($"Creating new user: {registerViewModel.Email}");
+                var newUser = new ApplicationUser()
+                {
+                    UserName = registerViewModel.Email,
+                    Email = registerViewModel.Email,
+                    FName = registerViewModel.FName,
+                    LName = registerViewModel.LName,
+                    CreatedAt = DateTime.Now,
+                    IsAgree = registerViewModel.IsAgree,
+                };
+
+                var result = await _userManager.CreateAsync(newUser, registerViewModel.Password);
+                if (result.Succeeded)
+                {
+                    _logger.Information($"User {registerViewModel.Email} created successfully, assigning role");
+                    await _userManager.AddToRoleAsync(newUser, "User");
+                    TempData["Message"] = "User created successfully!";
+                    return RedirectToAction("Login");
+                }
+                else
+                {
+                    _logger.Error($"User creation failed for {registerViewModel.Email}, Errors: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                    TempData["Error"] = result.Errors.Select(e => e.Description).ToList();
+                }
+            }
+            _logger.Warning("Model state is invalid, returning Register view");
+            return View(registerViewModel);
+        }
+        #endregion
+
     }
 }
 
