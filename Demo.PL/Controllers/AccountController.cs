@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Security.Claims;
+using Microsoft.Data.SqlClient;
+using Dapper;
 namespace Demo.PL.Controllers
 {
     public class AccountController : Controller
@@ -28,6 +30,15 @@ namespace Demo.PL.Controllers
         }
         #endregion
 
+
+        private async Task SaveLogToDb(string level, string message, string exception = null)
+        {
+            using (var connection = new SqlConnection("Server=sql.bsite.net\\MSSQL2016;Database=mvcproj_mvcproj_;User Id=mvcproj_mvcproj_;Password=mvcproj;TrustServerCertificate=True;MultipleActiveResultSets=true"))
+            {
+                var query = "INSERT INTO Logs (LogLevel, Message, Exception) VALUES (@LogLevel, @Message, @Exception)";
+                await connection.ExecuteAsync(query, new { LogLevel = level, Message = message, Exception = exception });
+            }
+        }
 
 
         #region Register Get
@@ -192,41 +203,59 @@ namespace Demo.PL.Controllers
         [HttpPost]
         public async Task<IActionResult> Login(LoginViewModel loginViewModel)
         {
-            _logger.LogInformation("Starting login process");
+            _logger.LogInformation("[LOGIN] Starting login process for user: {UserName}", loginViewModel.UserName);
+            SaveLogToDb("LOGIN", "Starting login process", loginViewModel.UserName);
+
             if (ModelState.IsValid)
             {
                 var user = await _userManager.FindByEmailAsync(loginViewModel.UserName);
                 if (user is not null)
                 {
-                    _logger.LogInformation($"User found for email {loginViewModel.UserName}, verifying password");
+                    _logger.LogInformation("[LOGIN] User found: {Email}. Verifying password...", user.Email);
+                    SaveLogToDb("LOGIN", "User found, verifying password", user.Email);
+
                     var check = await _userManager.CheckPasswordAsync(user, loginViewModel.Password);
                     if (check)
                     {
-                        _logger.LogInformation("Password verification succeeded, signing in user");
+                        _logger.LogInformation("[LOGIN] Password verified successfully for user: {Email}. Attempting sign-in...", user.Email);
+                        SaveLogToDb("LOGIN", "Password verified, signing in", user.Email);
+
                         var sign = await _signinUser.PasswordSignInAsync(user, loginViewModel.Password, loginViewModel.RememberMe, false);
                         if (sign.Succeeded)
                         {
                             user.LastLogin = DateTime.Now;
                             await _userManager.UpdateAsync(user);
-                            _logger.LogInformation($"User {user.Email} logged in successfully");
+                            _logger.LogInformation("[LOGIN] User {Email} signed in successfully.", user.Email);
+                            SaveLogToDb("LOGIN", "User signed in successfully", user.Email);
                             return RedirectToAction("Index", "Home");
+                        }
+                        else
+                        {
+                            _logger.LogWarning("[LOGIN] Sign-in failed for user: {Email}", user.Email);
+                            SaveLogToDb("LOGIN", "Sign-in failed", user.Email);
                         }
                     }
                     else
                     {
-                        _logger.LogWarning("Password verification failed");
+                        _logger.LogWarning("[LOGIN] Password verification failed for user: {Email}", user.Email);
+                        SaveLogToDb("LOGIN", "Password verification failed", user.Email);
                         ModelState.AddModelError(string.Empty, "IncorrectPassword");
                         TempData["Message"] = "IncorrectPassword";
                     }
                 }
                 else
                 {
-                    _logger.LogWarning($"User not found for email {loginViewModel.UserName}");
+                    _logger.LogWarning("[LOGIN] No user found with email: {Email}", loginViewModel.UserName);
+                    SaveLogToDb("LOGIN", "No user found", loginViewModel.UserName);
                     ModelState.AddModelError(string.Empty, "User Name Not Found");
                     TempData["Message"] = "UserNameNotFound";
                 }
             }
-            _logger.LogWarning("Model state is invalid, returning Login view");
+            else
+            {
+                _logger.LogWarning("[LOGIN] Model state is invalid, returning Login view");
+                SaveLogToDb("LOGIN", "Model state invalid");
+            }
             return View(loginViewModel);
         }
         #endregion
@@ -235,10 +264,14 @@ namespace Demo.PL.Controllers
         [HttpPost]
         public async Task<IActionResult> Register(RegisterViewModel registerViewModel)
         {
-            _logger.LogInformation("Starting user registration process");
+            _logger.LogInformation("[REGISTER] Starting registration process for user: {Email}", registerViewModel.Email);
+            SaveLogToDb("REGISTER", "Starting registration process", registerViewModel.Email);
+
             if (ModelState.IsValid)
             {
-                _logger.LogInformation($"Creating new user: {registerViewModel.Email}");
+                _logger.LogInformation("[REGISTER] Creating new user: {Email}", registerViewModel.Email);
+                SaveLogToDb("REGISTER", "Creating new user", registerViewModel.Email);
+
                 var newUser = new ApplicationUser()
                 {
                     UserName = registerViewModel.Email,
@@ -252,18 +285,25 @@ namespace Demo.PL.Controllers
                 var result = await _userManager.CreateAsync(newUser, registerViewModel.Password);
                 if (result.Succeeded)
                 {
-                    _logger.LogInformation($"User {registerViewModel.Email} created successfully, assigning role");
+                    _logger.LogInformation("[REGISTER] User {Email} created successfully. Assigning role...", registerViewModel.Email);
+                    SaveLogToDb("REGISTER", "User created successfully, assigning role", registerViewModel.Email);
+
                     await _userManager.AddToRoleAsync(newUser, "User");
                     TempData["Message"] = "User created successfully!";
                     return RedirectToAction("Login");
                 }
                 else
                 {
-                    _logger.LogError($"User creation failed for {registerViewModel.Email}, Errors: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                    _logger.LogError("[REGISTER] User creation failed for {Email}. Errors: {Errors}", registerViewModel.Email, string.Join(", ", result.Errors.Select(e => e.Description)));
+                    SaveLogToDb("REGISTER", "User creation failed", registerViewModel.Email);
                     TempData["Error"] = result.Errors.Select(e => e.Description).ToList();
                 }
             }
-            _logger.LogWarning("Model state is invalid, returning Register view");
+            else
+            {
+                _logger.LogWarning("[REGISTER] Model state is invalid, returning Register view");
+                SaveLogToDb("REGISTER", "Model state invalid");
+            }
             return View(registerViewModel);
         }
         #endregion
