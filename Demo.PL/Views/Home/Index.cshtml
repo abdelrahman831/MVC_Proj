@@ -1,4 +1,4 @@
-﻿
+﻿@model ContactViewModel
 @{
 
     ViewData["Title"] = "Home Page";
@@ -9,12 +9,211 @@
 
 }
 
-            <div class="text-center">
-                <h1 class="display-4">Welcome</h1>
-                <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+@if (!string.IsNullOrEmpty(TempData["Message"] as string))
+{
+    <div aria-live="polite" aria-atomic="true" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050;">
+        <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <img src="~/img/checkmark.png" class="rounded me-2" alt="Success Icon" width="20" height="20">
+                <strong class="me-auto text-primary">Success!</strong>
+                <small class="text-muted">@DateTime.Now.ToString("hh:mm tt")</small>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
             </div>
-            
+            <div class="toast-body">
+                @TempData["Message"]
+            </div>
+        </div>
+    </div>
+}
 
+<body>
+
+    <main>
+
+        <!-- Hero Section -->
+        <section class="bg-color-neutral-silver">
+            <div class="container mx-auto">
+                <div class="flex flex-col-reverse md:flex-row items-center justify-between py-14 px-5 md:px-0">
+                    <div class="w-full md:w-1/2">
+                        <h1 class="text-3xl mt-5 md:mt-0 md:text-[44px] font-bold text-color-neutral-d-grey leading-tight tracking-wider font-inter">
+                            MVC Project Overview <br />
+                            <span class="text-color-primary-shade-1">Employee and Department Management</span>
+                        </h1>
+
+                        <p class="text-sm tracking-wide mt-5 text-color-neutral-l-grey font-inter">
+                            A simple yet powerful management system to streamline employee and department operations. With easy-to-navigate interfaces, secure login, and advanced role management.
+                        </p>
+                    </div>
+                    <div class="w-full md:w-1/2 flex justify-end items-end" style="width:300px">
+                        <img src="./img/Illustration.svg" alt="project illustration">
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Client Section -->
+        <section id="tech-stack" class="py-10">
+            <div class="container mx-auto">
+                <div class="flex flex-col items-center justify-center">
+                    <h2 class="title">Technologies & Patterns Used</h2>
+                    <p class="paragraph">The following languages, frameworks, packages, and design patterns are utilized in the project to ensure maintainability, scalability, and performance.</p>
+                </div>
+
+                <div class="flex flex-wrap flex-row pt-10 overflow-hidden items-center justify-center gap-20 px-2 md:px-0">
+                    <!-- Language/Framework/Package Icons -->
+                    <img style="width:60px" src="./img/tech/logo-dotnet.png" alt=".NET Framework">
+                    <img style="width:60px" src="./img/tech/logo-csharp.png" alt="C#">
+                    <img style="width:60px" src="./img/tech/logo-mvc.png" alt="MVC">
+                    <img style="width:60px" src="./img/tech/logo-sqlserver.png" alt="SQL Server">
+                    <img style="width:60px" src="./img/tech/logo-jquery.png" alt="jQuery">
+                    <img style="width:60px" src="./img/tech/logo-bootstrap.png" alt="Bootstrap">
+                    <img style="width:60px" src="./img/tech/logo-entity-framework.png" alt="Entity Framework">
+
+                    <!-- Design Patterns & Services -->
+                    <img style="width:60px" src="./img/tech/logo-repository-pattern.png" alt="Repository Pattern">
+                    <img style="width:60px" src="./img/tech/logo-unitofwork.png" alt="UnitOfWork Pattern">
+                    <img style="width:60px" src="./img/tech/logo-usermanager.png" alt="UserManager">
+                    <img style="width:60px" src="./img/tech/logo-dependency-injection.png" alt="Dependency Injection">
+                    <img style="width:60px" src="./img/tech/logo-smtp.png" alt="SMTP for Email">
+                </div>
+            </div>
+        </section>
+
+
+        <!-- Service Section -->
+        <section id="service">
+            <div class="container mx-auto">
+                <div class="flex flex-col items-center justify-center">
+                    <h2 class="title max-w-sm text-center">What does this Live Demo Do?</h2>
+                    <p class="paragraph mt-2">A simple managment system with crud operation on Employees and Department, with a Managment of Users/Roles Using UserManager and SignInManager</p>
+                </div>
+
+                <div class="flex flex-col md:flex-row md:justify-around justify-center py-10 mx-4 md:mx-0">
+                    <!-- Card for Employee Management -->
+                    <div class="flex flex-col items-center justify-center md:w-1/4 w-full rounded-md shadow-md py-5 px-4">
+                        <div class="w-10 h-10 bg-color-primary-tint-5 rounded-ss-xl rounded-se-md rounded-ee-2xl rounded-es-md relative">
+                            <div class="absolute -left-2 top-1">
+                                <i class="fa-solid fa-users text-2xl"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <h2 class="text-center font-inter font-semibold text-xl text-color-neutral-d-grey">Employee Management</h2>
+                            <p class="text-center font-inter text-xs tracking-wide text-color-neutral-d-grey mt-2">
+                                Efficiently manage your employees through an easy-to-use interface. With automated role assignments and a detailed employee profile system.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Card for Department Management -->
+                    <div class="flex flex-col items-center justify-center md:w-1/4 w-full md:mt-0 mt-5 rounded-md shadow-md py-5 px-3">
+                        <div class="w-10 h-10 bg-color-primary-tint-5 rounded-ss-xl rounded-se-md rounded-ee-2xl rounded-es-md relative">
+                            <div class="absolute -left-2 top-1">
+                                <i class="fa-solid fa-building text-2xl"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <h2 class="text-center font-inter font-semibold text-xl text-color-neutral-d-grey">Department Management</h2>
+                            <p class="text-center font-inter text-xs tracking-wide text-color-neutral-d-grey mt-2">
+                                Seamlessly manage departments within your company. Assign employees, monitor performance, and integrate with other modules.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Card for Role-Based Security -->
+                    <div class="flex flex-col items-center justify-center md:w-1/4 w-full mt-5 md:mt-0 rounded-md shadow-md py-5 px-4">
+                        <div class="w-10 h-10 bg-color-primary-tint-5 rounded-ss-xl rounded-se-md rounded-ee-2xl rounded-es-md relative">
+                            <div class="absolute -left-2 top-1">
+                                <i class="fa-solid fa-lock text-2xl"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <h2 class="text-center font-inter font-semibold text-xl text-color-neutral-d-grey">Role Management</h2>
+                            <p class="text-center font-inter text-xs tracking-wide text-color-neutral-d-grey mt-2">
+                                Our advanced role management system ensures that only the right people have access to specific resources and data within the application.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="content">
+
+                <div class="container">
+                    <div class="row justify-content-center">
+                        <div class="col-md-10">
+
+
+                            <div class="row justify-content-center">
+                                <div class="col-md-6">
+
+                                    <h3 class="heading mb-4">Let's talk about everything!</h3>
+                                    <p>Feel free to contact me for any project ideas or any job offer</p>
+
+                                    <p><img src="img/undraw-contact.svg" alt="Image" class="img-fluid"></p>
+
+
+                                </div>
+                                <div class="col-md-6">
+
+                                    <form asp-action="Contact" class="mb-5" method="post" id="contactForm" name="contactForm">
+                                        <div class="row">
+                                            <div class="col-md-12 form-group">
+                                                <input asp-for="Name" type="text" class="form-control" name="name" id="name" placeholder="Your name" required>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-12 form-group">
+                                                <input asp-for"Email" type="text" class="form-control" name="email" id="email" placeholder="Email" required>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-12 form-group">
+                                                <input asp-for"Subject" type="text" class="form-control" name="subject" id="subject" placeholder="Subject" required>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-12 form-group">
+                                                <textarea asp-for"Message" class="form-control" name="message" id="message" cols="30" rows="7" placeholder="Write your message" required></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-12">
+                                                <input type="submit" value="Send Message" class="btn btn-primary rounded-0 py-2 px-4">
+                                                <span class="submitting"></span>
+                                            </div>
+                                        </div>
+                                    </form>
+
+                                    <div id="form-message-warning mt-4"></div>
+                                    <div id="form-message-success">
+                                        Your message was sent, thank you!
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        </main>
+    <script src="./main.js"> </script>
+</body>
+
+
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        setTimeout(() => {
+            document.querySelector(".contact-section").classList.add("show");
+        }, 300);
+    });
+</script>
     <script>
         $(document).ready(function () {
             $('form input, form select, form textarea').on('blur', function () {
@@ -29,6 +228,60 @@
             var toast = new bootstrap.Toast(toastEl, { delay: 5000 }); // Auto-hide after 5 seconds
             toast.show();
         });
+
+             const hamburger =  document.getElementById('hamburger')
+     const navClose =  document.getElementById('nav-close')
+
+     const mobileMenu  = document.getElementById('mobile_menu')
+     //const mainMenu  = document.getElementById('main_menu')
+
+     hamburger.addEventListener("click", ()=>{
+        mobileMenu.classList.remove('hidden');
+    })
+    navClose.addEventListener("click", ()=>{
+        mobileMenu.classList.add('hidden');
+    })
+
+    //const closeIcon  = document.getElementById('nav-close');
+    //const navMemu  = document.getElementById('nav-menu')
+
+
+    /* const navLink = document.querySelectorAll(".nav__link")
+
+
+    navLink.forEach(link=>
+
+        link.addEventListener("click", ()=>{
+            navMemu.classList.add('hidden');
+        })
+    ) */
+
+    /* closeIcon.addEventListener("click", ()=>{
+        navMemu.classList.add('hidden');
+    })
+
+    hamburger.addEventListener("click", ()=>{
+        navMemu.classList.remove('hidden');
+    }) */
+
+
+    /* const hamburgers =  document.querySelector('#hamburger');
+    const menu =  document.getElementById('menu');
+    const faSolid = document.querySelector('.fa-solid');
+    const navLinks = document.querySelectorAll(".nav__link")
+
+    hamburgers.addEventListener("click", ()=>{
+        menu.classList.toggle('hidden');
+        faSolid.classList.toggle('fa-xmark');
+    })
+
+    navLinks.forEach(link=>
+
+        link.addEventListener("click", ()=>{
+            menu.classList.toggle('hidden');
+            faSolid.classList.toggle('fa-xmark');
+        })
+    ) */
     </script>
 
 
