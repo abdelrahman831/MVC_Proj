@@ -18,9 +18,13 @@
         <li class="nav-item" role="presentation">
             <a class="nav-link active" id="general-tab" data-bs-toggle="tab" href="#general" role="tab" aria-controls="general" style="color: black;">General</a>
         </li>
-        <li class="nav-item" role="presentation">
-            <a class="nav-link" id="administration-tab" data-bs-toggle="tab" href="#administration" role="tab" aria-controls="administration" style="color: black;">Administration</a>
-        </li>
+        @if (User.IsInRole("Admin"))
+        {
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" id="administration-tab" data-bs-toggle="tab" href="#administration" role="tab" aria-controls="administration" style="color: black;">Administration</a>
+            </li>
+        }
+
     </ul>
     <div class="tab-content" id="myTabContent">
         <!-- General Tab -->
@@ -98,22 +102,24 @@
                 <div class="form-group col-6">
                     <label class="form-label" asp-for="DepartmentId">Department</label>
                     <input value="@(Departments.FirstOrDefault(d => d.Value == Model.DepartmentId.ToString())?.Text ?? "No Department")"
-                           class="form-control" readonly />
+                    class="form-control" readonly />
 
                 </div>
                 @* //-----------// *@
 
                 <div class="form-group mb-3">
                     <input asp-for="IsActive" class="form-check-input" disabled />
-                    <label class="col-form-label" asp-for="IsActive">Is Active</label>
+                    <label class="col-form-label" asp-for="IsActive">I agree to all the terms and conditions and the  <a class="text-decoration-none" asp-controller="Home" asp-action="Privacy">privacy</a> policy of the website</label>
                 </div>
 
             </div>
         </div>
+        @if (User.IsInRole("Admin"))
 
-        <!-- Administration Tab Content -->
-        <div class="tab-pane fade p-4 border" id="administration" role="tabpanel" aria-labelledby="administration-tab">
-            <div class="row">
+        {
+            <!-- Administration Tab Content -->
+            <div class="tab-pane fade p-4 border" id="administration" role="tabpanel" aria-labelledby="administration-tab">
+                <div class="row">
                 <div class="form-group col-12">
                     <label class="col-form-label" asp-for="CreatedBy"></label>
                     <input asp-for="CreatedBy" class="form-control" readonly />
@@ -132,6 +138,7 @@
                 </div>
             </div>
         </div>
+        }
     </div>
 
     <!-- Buttons Section -->

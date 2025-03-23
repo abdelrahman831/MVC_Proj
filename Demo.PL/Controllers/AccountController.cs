@@ -205,56 +205,65 @@ namespace Demo.PL.Controllers
         {
             _logger.LogInformation("[LOGIN] Starting login process for user: {UserName}", loginViewModel.UserName);
             SaveLogToDb("LOGIN", "Starting login process", loginViewModel.UserName);
-
-            if (ModelState.IsValid)
+            try
             {
-                var user = await _userManager.FindByEmailAsync(loginViewModel.UserName);
-                if (user is not null)
+
+
+                if (ModelState.IsValid)
                 {
-                    _logger.LogInformation("[LOGIN] User found: {Email}. Verifying password...", user.Email);
-                    SaveLogToDb("LOGIN", "User found, verifying password", user.Email);
-
-                    var check = await _userManager.CheckPasswordAsync(user, loginViewModel.Password);
-                    if (check)
+                    var user = await _userManager.FindByEmailAsync(loginViewModel.UserName);
+                    if (user is not null)
                     {
-                        _logger.LogInformation("[LOGIN] Password verified successfully for user: {Email}. Attempting sign-in...", user.Email);
-                        SaveLogToDb("LOGIN", "Password verified, signing in", user.Email);
+                        _logger.LogInformation("[LOGIN] User found: {Email}. Verifying password...", user.Email);
+                        SaveLogToDb("LOGIN", "User found, verifying password", user.Email);
 
-                        var sign = await _signinUser.PasswordSignInAsync(user, loginViewModel.Password, loginViewModel.RememberMe, false);
-                        if (sign.Succeeded)
+                        var check = await _userManager.CheckPasswordAsync(user, loginViewModel.Password);
+                        if (check)
                         {
-                            user.LastLogin = DateTime.Now;
-                            await _userManager.UpdateAsync(user);
-                            _logger.LogInformation("[LOGIN] User {Email} signed in successfully.", user.Email);
-                            SaveLogToDb("LOGIN", "User signed in successfully", user.Email);
-                            return RedirectToAction("Index", "Home");
+                            _logger.LogInformation("[LOGIN] Password verified successfully for user: {Email}. Attempting sign-in...", user.Email);
+                            SaveLogToDb("LOGIN", "Password verified, signing in", user.Email);
+
+                            var sign = await _signinUser.PasswordSignInAsync(user, loginViewModel.Password, loginViewModel.RememberMe, false);
+                            if (sign.Succeeded)
+                            {
+                                user.LastLogin = DateTime.Now;
+                                await _userManager.UpdateAsync(user);
+                                _logger.LogInformation("[LOGIN] User {Email} signed in successfully.", user.Email);
+                                SaveLogToDb("LOGIN", "User signed in successfully", user.Email);
+                                return RedirectToAction("Index", "Home");
+                            }
+                            else
+                            {
+                                _logger.LogWarning("[LOGIN] Sign-in failed for user: {Email}", user.Email);
+                                SaveLogToDb("LOGIN", "Sign-in failed", user.Email);
+                            }
                         }
                         else
                         {
-                            _logger.LogWarning("[LOGIN] Sign-in failed for user: {Email}", user.Email);
-                            SaveLogToDb("LOGIN", "Sign-in failed", user.Email);
+                            _logger.LogWarning("[LOGIN] Password verification failed for user: {Email}", user.Email);
+                            SaveLogToDb("LOGIN", "Password verification failed", user.Email);
+                            ModelState.AddModelError(string.Empty, "IncorrectPassword");
+                            TempData["Message"] = "IncorrectPassword";
                         }
                     }
                     else
                     {
-                        _logger.LogWarning("[LOGIN] Password verification failed for user: {Email}", user.Email);
-                        SaveLogToDb("LOGIN", "Password verification failed", user.Email);
-                        ModelState.AddModelError(string.Empty, "IncorrectPassword");
-                        TempData["Message"] = "IncorrectPassword";
+                        _logger.LogWarning("[LOGIN] No user found with email: {Email}", loginViewModel.UserName);
+                        SaveLogToDb("LOGIN", "No user found", loginViewModel.UserName);
+                        ModelState.AddModelError(string.Empty, "User Name Not Found");
+                        TempData["Message"] = "UserNameNotFound";
                     }
                 }
                 else
                 {
-                    _logger.LogWarning("[LOGIN] No user found with email: {Email}", loginViewModel.UserName);
-                    SaveLogToDb("LOGIN", "No user found", loginViewModel.UserName);
-                    ModelState.AddModelError(string.Empty, "User Name Not Found");
-                    TempData["Message"] = "UserNameNotFound";
+                    _logger.LogWarning("[LOGIN] Model state is invalid, returning Login view");
+                    SaveLogToDb("LOGIN", "Model state invalid");
                 }
             }
-            else
+            catch (Exception ex)
             {
-                _logger.LogWarning("[LOGIN] Model state is invalid, returning Login view");
-                SaveLogToDb("LOGIN", "Model state invalid");
+                _logger.LogError(ex, "An error occurred while logging in");
+                SaveLogToDb("LOGIN", "An error occurred while logging in", ex.Message);
             }
             return View(loginViewModel);
         }

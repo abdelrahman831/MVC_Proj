@@ -2,12 +2,16 @@
 using Demo.BLL.Services.Employees;
 using Demo.DAL.Entities.Identity;
 using Demo.PL.ViewModels.DashBoard;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Demo.PL.Controllers
 {
+
+    [Authorize(Roles= "ROOT")]
+
     public class DashBoardController(UserManager<ApplicationUser> _userManager,IDepartmentService _departmentService,IEmployeeService _employeeService) : Controller
     {
 

@@ -190,7 +190,8 @@
                                 <i class="fa-solid fa-address-card"></i> Employees
                             </a>
                         </li>
-                        @if(User.IsInRole("Admin"))
+                        @if (User.IsInRole("Abdul"))
+
                         {
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="User" asp-action="Index">
@@ -202,9 +203,7 @@
                                     <i class="fa-solid fa-pen-ruler"></i> Roles
                                 </a>
                             </li>
-                        }
-                        @if (User.IsInRole("Abdul"))
-                        {
+                        
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="DashBoard" asp-action="Index">
                                     <i class="fa-solid fa-chart-simple"></i>
