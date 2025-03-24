@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using Demo.BLL.Services.DashBoard;
 using Demo.BLL.Services.Departments;
 using Demo.BLL.Services.Employees;
 using Demo.DAL.Entities.Identity;
@@ -14,44 +15,19 @@ namespace Demo.PL.Controllers
 
     [Authorize(Roles= "ROOT")]
 
-    public class DashBoardController(UserManager<ApplicationUser> _userManager,IDepartmentService _departmentService,IEmployeeService _employeeService) : Controller
+    public class DashBoardController(IDashBoardService _dashBoardService,IActivityService _activityService) : Controller
     {
 
-        private async Task<List<ActivityViewModel>> ActivityData()
-        {
-            using (var connection = new SqlConnection("Server=sql.bsite.net\\MSSQL2016;Database=mvcproj_mvcproj_;User Id=mvcproj_mvcproj_;Password=mvcproj;TrustServerCertificate=True;MultipleActiveResultSets=true"))
-            {
-                var query = "select * from UserActivity";
-                var result=  connection.Query(query).ToList();
 
-                var dataToReturn=  result.Select(r=> new ActivityViewModel 
-                { 
-                    LogLevel = r.LogLevel,
-                    Status = r.Status,
-                    Message = r.Message,
-                    CreatedAt = r.CreatedAt,
-                    Exception = r.Exception
-                });
-
-                return dataToReturn.ToList();
-            }
-        }
 
         public async Task<IActionResult> Index()
         {
-            var users = await _userManager.Users.ToListAsync();
-
-            int totlUsers = users.Count();
-
-
-
-            int RegisteredUsersToday = users.Where(u => u.CreatedAt.HasValue && u.CreatedAt.Value.Date == DateTime.Now.Date).Count();
-
-            int LoggedInUsers = users.Where(u => u.LastLogin.HasValue && u.LastLogin.Value.Date == DateTime.Now.Date).Count();
-
-            int TotalDepartments = (await _departmentService.GetAllDepartmentsAsync()).Count();
-
-            int TotalEmployees = (await _employeeService.GetAllEmployeesAsync()).Count();
+            var totlUsers = await _dashBoardService.GetTotalUsersAsync();
+            var RegisteredUsersToday = await _dashBoardService.GetAllRegisteredUsersToday();
+            var LoggedInUsers = await _dashBoardService.GetLoggedInUsersAsync();
+            var TotalDepartments = await _dashBoardService.GetTotalDepartmentsAsync();
+            var TotalEmployees = await _dashBoardService.GetTotalEmployeesAsync();
+            var allActivity = await _dashBoardService.GetLastTenActivitiesAsync();
 
             var dashBoardViewModel = new DashBoardViewModel
             {
@@ -59,7 +35,15 @@ namespace Demo.PL.Controllers
                 RegisteredUsersToday = RegisteredUsersToday,
                 LoggedInUsers = LoggedInUsers,
                 TotalDepartments = TotalDepartments,
-                TotalEmployees = TotalEmployees
+                TotalEmployees = TotalEmployees,
+                Activity = allActivity.Select(r => new ActivityViewModel
+                {
+                    LogLevel = r.LogLevel,
+                    Status = r.Status,
+                    Message = r.Message,
+                    CreatedAt = r.CreatedAt,
+                    Exception = r.Exception
+                }).ToList()
             };
 
 
@@ -70,19 +54,18 @@ namespace Demo.PL.Controllers
         [HttpGet]
         public async Task<IActionResult> AllActivity()
         {
-            var allActivity = await ActivityData();
-            
-            var activity = allActivity.Select(r => new ActivityViewModel
+            var allActivity = await _activityService.GetAllActivitiesAsync();
+
+            var activityViewModel = allActivity.Select(r => new ActivityViewModel
             {
                 LogLevel = r.LogLevel,
                 Status = r.Status,
                 Message = r.Message,
                 CreatedAt = r.CreatedAt,
                 Exception = r.Exception
-
             }).ToList();
 
-            return View(activity);
+            return View(activityViewModel);
         }
 
 

@@ -1,4 +1,5 @@
-﻿using Demo.DAL.Entities.Departments;
+﻿using Demo.DAL.Entities.DashBoard;
+using Demo.DAL.Entities.Departments;
 using Demo.DAL.Entities.Employees;
 using Demo.DAL.Entities.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -32,5 +33,10 @@ namespace Demo.DAL.Presistance.Data
         }
         public DbSet<Department> Departments { get; set; }
         public DbSet<Employee> Employees { get; set; }
+
+        public DbSet<DashBoard> DashBoards { get; set; }
+
+        public DbSet<Activity> Activities{ get; set; }
+
     }
 }

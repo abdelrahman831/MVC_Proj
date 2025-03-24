@@ -1,4 +1,5 @@
 ﻿using Demo.DAL.Presistance.Data;
+using Demo.DAL.Presistance.Repositories.DashBoardRepositories;
 using Demo.DAL.Presistance.Repositories.Departments;
 using Demo.DAL.Presistance.Repositories.Employees;
 using System;
@@ -14,6 +15,10 @@ namespace Demo.DAL.Presistance.UnitOfWork
         public ApplicationDbContext _dbContext { get; }
         public IEmployeeRepository EmployeeRepository => new EmployeeRepository(_dbContext);
         public IDepartmentRepository DepartmentRepository => new DepartmentRepository(_dbContext);
+
+        public IDashBoardRepositorie DashBoardRepositorie => new DashBoardRepositories(_dbContext);
+
+        public IActivityRepositories ActivityRepositories => new ActivityRepositories(_dbContext);
 
         public UnitOfWork(ApplicationDbContext dbContext)
         {

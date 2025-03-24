@@ -11,6 +11,8 @@ using Microsoft.Data.SqlClient;
 using Dapper;
 using System.Linq.Expressions;
 using NuGet.Common;
+using Demo.BLL.Services.DashBoard;
+using Demo.BLL.DTOS;
 namespace Demo.PL.Controllers
 {
     public class AccountController : Controller
@@ -19,15 +21,16 @@ namespace Demo.PL.Controllers
         private readonly SignInManager<ApplicationUser> _signinUser;
         private readonly IEmailService _emailService;
         private readonly RoleManager<ApplicationUser> _roleManager;
-
+        private readonly IActivityService _activityService;
 
 
         #region Ctor Ingection
-        public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IEmailService emailSettings)
+        public AccountController(IActivityService activityService, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IEmailService emailSettings)
         {
             _userManager = userManager;
             _signinUser = signInManager;
             _emailService = emailSettings;
+            _activityService = activityService;
         }
         #endregion
 
@@ -38,15 +41,6 @@ namespace Demo.PL.Controllers
             {
                 var query = "INSERT INTO Logs (LogLevel, Message, Exception) VALUES (@LogLevel, @Message, @Exception)";
                 await connection.ExecuteAsync(query, new { LogLevel = level, Message = message, Exception = exception });
-            }
-        }
-
-        private async Task SaveLogToDbForDashBoard(string level,byte status, string message, string exception = null)
-        {
-            using (var connection = new SqlConnection("Server=sql.bsite.net\\MSSQL2016;Database=mvcproj_mvcproj_;User Id=mvcproj_mvcproj_;Password=mvcproj;TrustServerCertificate=True;MultipleActiveResultSets=true"))
-            {
-                var query = "INSERT INTO UserActivity (LogLevel,Status, Message, Exception) VALUES (@LogLevel,@Status, @Message, @Exception)";
-                await connection.ExecuteAsync(query, new { LogLevel = level, Status= status, Message = message, Exception = exception });
             }
         }
 
@@ -84,13 +78,27 @@ namespace Demo.PL.Controllers
 
 
 
-            if (user is not null)
+            if (user is not null && user.Email is not null)
             {
                 user.LastLogin = null;
                 await _userManager.UpdateAsync(user);
+
+                var activity = new DashBoardActivityDto
+                {
+                    LogLevel = "LogOut",
+                    Status = true,
+                    Message = "User Logged Out",
+                    Exception = user.Email,
+                    CreatedAt = DateTime.Now
+                };
+
+                await _activityService.AddActivity(activity);
             }
 
             await _signinUser.SignOutAsync();
+
+
+
             return RedirectToAction("Login", "Account");
         }
         #endregion
@@ -146,29 +154,31 @@ namespace Demo.PL.Controllers
 
                             if (result.Succeeded)
                             {
-                                await SaveLogToDbForDashBoard("Reset Password", 1, "Password Reset Successfuly", email);
+                                var activity = new DashBoardActivityDto
+                                {
+                                    LogLevel = "ResetPwd",
+                                    Status = true,
+                                    Message = "Password Reset Successfuly",
+                                    Exception = user.Email,
+                                    CreatedAt = DateTime.Now
+                                };
+
+                                await _activityService.AddActivity(activity);
 
                                 TempData["Message"] = "Password reset successfully";
                                 return RedirectToAction("Login");
                             }
                             else
                             {
-                                await SaveLogToDbForDashBoard("Reset Password", 0, "An error occured while resetting the password", $"{email} -- {result.Errors}");
+                                foreach (var error in result.Errors)
+                                {
+                                    await SaveLogToDb("ResetPwd", "An error occured", error.Description);
+                                }
 
                                 ModelState.AddModelError(string.Empty, "An error occurred, please try again");
                             }
                         }
-                        else
-                        {
-                            await SaveLogToDbForDashBoard("Reset Password", 0, "Email not found in DataBase", email);
-
-                        }
                     }
-                    if (email is not null)
-                        await SaveLogToDbForDashBoard("Reset Password", 0, "Missing Token", email);
-                    if (token is not null)
-                        await SaveLogToDbForDashBoard("Reset Password", 0, "Missing Email", token);
-
 
                     return RedirectToAction("Register"); 
                 }
@@ -176,7 +186,7 @@ namespace Demo.PL.Controllers
             }
             catch (Exception ex)
             {
-                await SaveLogToDbForDashBoard("Reset Password", 0, "An error occured", ex.Message);
+                await SaveLogToDb("Reset Password","An error occured", ex.Message);
 
             }
             return View(resetPasswordViewModel);
@@ -187,6 +197,10 @@ namespace Demo.PL.Controllers
         [HttpPost]
         public async Task<IActionResult> SendResetPasswordUrl(ForgetPasswordViewModel forgetpwdVm)
         {
+            try
+            {
+
+            
             if (ModelState.IsValid)
             {
                 var user = await _userManager.FindByEmailAsync(forgetpwdVm.Email);
@@ -208,10 +222,28 @@ namespace Demo.PL.Controllers
                     TempData["Email"] = user.Email;
                     TempData["Token"] = token;
 
+                    var activity = new DashBoardActivityDto
+                    {
+                        LogLevel = "SenResetPwdUrl",
+                        Status = true,
+                        Message = "Reset Pwd Link was sent Successfully",
+                        Exception = user?.Email,
+                        CreatedAt = DateTime.Now
+                    };
+
+                    await _activityService.AddActivity(activity);
+
                     return RedirectToAction("CheckYourInbox");
                 }
+                await SaveLogToDb("SendResetPwdUrl", "No user found", forgetpwdVm.Email);
                 ModelState.AddModelError(string.Empty, "Invalid operation");
             }
+            }
+            catch (Exception ex)
+            {
+                await SaveLogToDb("SendResetPwdUrl", "An error occured", ex.Message);
+            }
+
             return View(forgetpwdVm);
         }
         #endregion
@@ -230,19 +262,27 @@ namespace Demo.PL.Controllers
                     var user = await _userManager.FindByEmailAsync(loginViewModel.UserName);
                     if (user is not null)
                     {
-                        SaveLogToDb("LOGIN", "User found, verifying password", user.Email);
 
                         var check = await _userManager.CheckPasswordAsync(user, loginViewModel.Password);
                         if (check)
                         {
-                            SaveLogToDb("LOGIN", "Password verified, signing in", user.Email);
 
                             var sign = await _signinUser.PasswordSignInAsync(user, loginViewModel.Password, loginViewModel.RememberMe, false);
                             if (sign.Succeeded)
                             {
                                 user.LastLogin = DateTime.Now;
                                 await _userManager.UpdateAsync(user);
-                                SaveLogToDb("LOGIN", "User signed in successfully", user.Email);
+
+                                var activity = new DashBoardActivityDto
+                                {
+                                    LogLevel = "LOGIN",
+                                    Status = true,
+                                    Message = "User Logged In",
+                                    Exception = user.Email,
+                                    CreatedAt = DateTime.Now
+                                };
+
+                                await _activityService.AddActivity(activity);
                                 return RedirectToAction("Index", "Home");
                             }
                             else
@@ -281,40 +321,58 @@ namespace Demo.PL.Controllers
         [HttpPost]
         public async Task<IActionResult> Register(RegisterViewModel registerViewModel)
         {
-            SaveLogToDb("REGISTER", "Starting registration process", registerViewModel.Email);
-
-            if (ModelState.IsValid)
+            try
             {
-                SaveLogToDb("REGISTER", "Creating new user", registerViewModel.Email);
+                SaveLogToDb("REGISTER", "Starting registration process", registerViewModel.Email);
 
-                var newUser = new ApplicationUser()
+                if (ModelState.IsValid)
                 {
-                    UserName = registerViewModel.Email,
-                    Email = registerViewModel.Email,
-                    FName = registerViewModel.FName,
-                    LName = registerViewModel.LName,
-                    CreatedAt = DateTime.Now,
-                    IsAgree = registerViewModel.IsAgree,
-                };
+                    SaveLogToDb("REGISTER", "Creating new user", registerViewModel.Email);
 
-                var result = await _userManager.CreateAsync(newUser, registerViewModel.Password);
-                if (result.Succeeded)
-                {
-                    SaveLogToDb("REGISTER", "User created successfully, assigning role", registerViewModel.Email);
+                    var newUser = new ApplicationUser()
+                    {
+                        UserName = registerViewModel.Email,
+                        Email = registerViewModel.Email,
+                        FName = registerViewModel.FName,
+                        LName = registerViewModel.LName,
+                        CreatedAt = DateTime.Now,
+                        IsAgree = registerViewModel.IsAgree,
+                    };
 
-                    await _userManager.AddToRoleAsync(newUser, "User");
-                    TempData["Message"] = "User created successfully!";
-                    return RedirectToAction("Login");
+                    var result = await _userManager.CreateAsync(newUser, registerViewModel.Password);
+                    if (result.Succeeded)
+                    {
+                        var activity = new DashBoardActivityDto
+                        {
+                            LogLevel = "REGISTER",
+                            Status = true,
+                            Message = "User created successfully",
+                            Exception = newUser.Email,
+                            CreatedAt = DateTime.Now
+                        };
+
+                        await _activityService.AddActivity(activity);
+
+                        SaveLogToDb("REGISTER", "User created successfully, assigning role", registerViewModel.Email);
+
+                        await _userManager.AddToRoleAsync(newUser, "User");
+                        TempData["Message"] = "User created successfully!";
+                        return RedirectToAction("Login");
+                    }
+                    else
+                    {
+                        SaveLogToDb("REGISTER", "User creation failed", registerViewModel.Email);
+                        TempData["Error"] = result.Errors.Select(e => e.Description).ToList();
+                    }
                 }
                 else
                 {
-                    SaveLogToDb("REGISTER", "User creation failed", registerViewModel.Email);
-                    TempData["Error"] = result.Errors.Select(e => e.Description).ToList();
+                    SaveLogToDb("REGISTER", "Model state invalid");
                 }
             }
-            else
+            catch (Exception ex)
             {
-                SaveLogToDb("REGISTER", "Model state invalid");
+                SaveLogToDb("REGISTER", "An error occurred while registering", ex.Message);
             }
             return View(registerViewModel);
         }

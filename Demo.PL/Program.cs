@@ -19,6 +19,8 @@ using Demo.DAL.Entities.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Demo.BLL.Services.EmailService;
+using Demo.DAL.Presistance.Repositories.DashBoardRepositories;
+using Demo.BLL.Services.DashBoard;
 namespace Demo.PL
 {
     public class Program
@@ -44,6 +46,7 @@ namespace Demo.PL
 
             builder.Services.AddScoped<IDepartmentService, DepartmentService>();
             builder.Services.AddScoped<IEmployeeService, EmployeeService>();
+
             builder.Services.AddScoped<UserActivityFilter>();
             builder.Services.AddControllersWithViews(options =>
             {
@@ -56,6 +59,9 @@ namespace Demo.PL
             builder.Services.AddAutoMapper(typeof(DepartmentServiceMapping));
             builder.Services.AddTransient<IAttacchmentService, AttachmentService>();
             builder.Services.AddScoped<IEmailService, EmailService>();
+            builder.Services.AddScoped<IDashBoardService, DashBoardService>();
+            builder.Services.AddScoped<IActivityService, ActivityService>();
+
 
             builder.Services.AddIdentity<ApplicationUser, IdentityRole>((options) =>
             {
