@@ -19,7 +19,8 @@ namespace Demo.PL.Controllers
     {
 
 
-
+        #region Index
+        [HttpGet]
         public async Task<IActionResult> Index()
         {
             var totlUsers = await _dashBoardService.GetTotalUsersAsync();
@@ -49,8 +50,10 @@ namespace Demo.PL.Controllers
 
 
             return View(dashBoardViewModel);
-        }
+        } 
+        #endregion
 
+        #region AllActivity GET
         [HttpGet]
         public async Task<IActionResult> AllActivity()
         {
@@ -66,7 +69,8 @@ namespace Demo.PL.Controllers
             }).ToList();
 
             return View(activityViewModel);
-        }
+        } 
+        #endregion
 
 
 

@@ -23,6 +23,25 @@
     <div class="center-wrap">
         <div class="section text-center">
             <h4 class="mb-4 pb-3">Log In</h4>
+
+            <div id="g_id_onload"
+                 data-client_id="731859756416-u28ab189af5bsk3r7qa7lk8p6rror52h.apps.googleusercontent.com"
+                 data-context="signin"
+                 data-ux_mode="popup"
+                 data-login_uri="https://localhost:44358/Account/GoogleLogin"
+                 data-auto_select="true"
+                 data-itp_support="true">
+            </div>
+
+            <div class="g_id_signin"
+                 data-type="standard"
+                 data-shape="pill"
+                 data-theme="filled_blue"
+                 data-text="signin_with"
+                 data-size="large"
+                 data-logo_alignment="left">
+            </div>
+            <br />
             <form asp-action="Login" id="loginForm">
                 <div asp-validation-summary="All" class="d-none"></div>
 
@@ -42,6 +61,7 @@
                 <p class="mb-0 mt-4 text-center">Don't have an account? <a asp-action="Register" class="link">SingUp</a></p>
 
                 <p class="mb-0 mt-4 text-center"><a asp-action="ForgetPassword" class="link">Forgot your password?</a></p>
+
             </form>
         </div>
     </div>

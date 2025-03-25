@@ -13,6 +13,12 @@ using System.Linq.Expressions;
 using NuGet.Common;
 using Demo.BLL.Services.DashBoard;
 using Demo.BLL.DTOS;
+using Google.Apis.Auth.AspNetCore3;
+using Google.Apis.Auth.OAuth2;
+using Google.Apis.Services;
+using Google.Apis.Drive.v3;
+using Google.Apis.Auth;
+
 namespace Demo.PL.Controllers
 {
     public class AccountController : Controller
@@ -20,17 +26,18 @@ namespace Demo.PL.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signinUser;
         private readonly IEmailService _emailService;
-        private readonly RoleManager<ApplicationUser> _roleManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IActivityService _activityService;
 
 
         #region Ctor Ingection
-        public AccountController(IActivityService activityService, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IEmailService emailSettings)
+        public AccountController(RoleManager<IdentityRole> roleManager,IActivityService activityService, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IEmailService emailSettings)
         {
             _userManager = userManager;
             _signinUser = signInManager;
             _emailService = emailSettings;
             _activityService = activityService;
+            _roleManager = roleManager;
         }
         #endregion
 
@@ -44,6 +51,29 @@ namespace Demo.PL.Controllers
             }
         }
 
+        [HttpPost]
+        public async Task<IActionResult> GoogleLogin(string credential)
+        {
+            try
+            {
+                // Validazione del token restituito da Google
+                var payload = await GoogleJsonWebSignature.ValidateAsync(credential);
+
+                // Qui puoi usare i dati dell'utente, ad esempio:
+                var userEmail = payload.Email;
+                var userName = payload.Name;
+                var userId = payload.Subject; // ID univoco Google
+
+                // Se vuoi registrare l'utente nel database, fallo qui
+
+                return Ok(new { Success = true, Email = userEmail, Name = userName });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Success = false, Message = "Errore nella validazione", Error = ex.Message });
+            }
+        }
+
 
         #region Register Get
         [HttpGet]
@@ -53,9 +83,6 @@ namespace Demo.PL.Controllers
         }
         #endregion
 
-
-       
-
         #region Login Get
         [HttpGet]
         public IActionResult Login()
@@ -64,9 +91,6 @@ namespace Demo.PL.Controllers
 
         }
         #endregion
-
-        
-
 
         #region LogOut
         [HttpGet]
@@ -110,8 +134,6 @@ namespace Demo.PL.Controllers
             return View();
         }
         #endregion
-
-       
 
         #region Check Your Inbox Get
         [HttpGet]
@@ -166,6 +188,17 @@ namespace Demo.PL.Controllers
                                 await _activityService.AddActivity(activity);
 
                                 TempData["Message"] = "Password reset successfully";
+
+                                //Send email to confirm password reset
+                                var emailTosend = new Demo.DAL.Entities.Identity.Email()
+                                {
+                                    To = user.Email,
+                                    Subject = "Password Reset Confirmation",
+                                    Body = $"Hi {user.FName} {user.LName} Your password has been reset successfully"
+                                };
+
+                                _emailService.SendEmail(emailTosend);
+
                                 return RedirectToAction("Login");
                             }
                             else
@@ -355,8 +388,22 @@ namespace Demo.PL.Controllers
 
                         SaveLogToDb("REGISTER", "User created successfully, assigning role", registerViewModel.Email);
 
+                        if(!await _roleManager.RoleExistsAsync("User"))
+                        {
+                            await _roleManager.CreateAsync(new IdentityRole("User"));
+                        }
                         await _userManager.AddToRoleAsync(newUser, "User");
                         TempData["Message"] = "User created successfully!";
+
+                        //Send Registration email
+                        var email = new Demo.DAL.Entities.Identity.Email()
+                        {
+                            To = registerViewModel.Email,
+                            Subject = "Registration Confirmation",
+                            Body = $"Hi {registerViewModel.FName} {registerViewModel.LName} You have successfully registered to our web app"
+                        };
+                        _emailService.SendEmail(email);
+
                         return RedirectToAction("Login");
                     }
                     else

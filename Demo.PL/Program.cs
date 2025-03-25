@@ -21,6 +21,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Demo.BLL.Services.EmailService;
 using Demo.DAL.Presistance.Repositories.DashBoardRepositories;
 using Demo.BLL.Services.DashBoard;
+using Google.Apis.Auth.AspNetCore3;
 namespace Demo.PL
 {
     public class Program
@@ -88,6 +89,24 @@ namespace Demo.PL
 
             //builder.Host.UseSerilog();
 
+            builder.Services.AddAuthentication(o =>
+            {
+                // This forces challenge results to be handled by Google OpenID Handler, so there's no
+                // need to add an AccountController that emits challenges for Login.
+                o.DefaultChallengeScheme = GoogleOpenIdConnectDefaults.AuthenticationScheme;
+                // This forces forbid results to be handled by Google OpenID Handler, which checks if
+                // extra scopes are required and does automatic incremental auth.
+                o.DefaultForbidScheme = GoogleOpenIdConnectDefaults.AuthenticationScheme;
+                // Default scheme that will handle everything else.
+                // Once a user is authenticated, the OAuth2 token info is stored in cookies.
+                o.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            })
+        .AddCookie().AddGoogleOpenIdConnect(options =>
+            {
+                options.ClientId = builder.Configuration["Authentication:Google:ClientId"];
+                options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+            });
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -110,104 +129,7 @@ namespace Demo.PL
                 pattern: "{controller=Home}/{action=Index}");
 
             app.Run();
-            #region 1 - MVC Project Architecture
-
-            #endregion
-
-            #region 2 - DAL - Department Entity- Department Configurations - DbContext
-
-            #endregion
-
-            #region 3 - DbContext - Dependency Injection
-
-            #endregion
-
-            #region 4 - DAL - Department Repository
-
-            #endregion
-
-            #region 5 - BLL - Department Service - DTOS
-
-            #endregion
-            //----------Session 04 -------------------
-            #region 1 - Department Controller - Index
-
-            #endregion
-            #region 2 - Department Controller - Create
-
-            #endregion
-
-            #region 3 - Department Controller - Details
-
-            #endregion
-
-            #region 4 - Department Controller - Edit
-
-            #endregion
-
-            #region 5 - Department Controller - Delete
-
-            #endregion
-            //----------Session 05 -------------------
-            #region 1 - Employee Entity - Configs - Migration
-
-            #endregion
-
-            #region 2 - Employee Repository
-
-            #endregion
-
-            #region 3 - Employee Service
-
-            #endregion
-
-            #region 4 - Employee Controller - Index - Create
-
-            #endregion
-
-            #region 5 - Employee Controller - Details
-
-            #endregion
-
-            #region 6 - Employee Controller - Edit
-
-            #endregion
-
-            #region 7 - Employee Controller - Delete
-
-            #endregion
-            //----------Session 06 -------------------
-            #region 1 - IEnumerable Vs IQueryable
-
-            #endregion
-
-            #region 2 - Client-Side Validation
-
-            #endregion
-
-            #region 3 - AntiForgeryToken [Action Filter]
-
-            #endregion
-
-            #region 4 - Partial Views
-
-            #endregion
-
-            #region 5 - ViewData Vs ViewBag
-
-            #endregion
-
-            #region 6 - TempData
-
-            #endregion
-
-            #region 7 - RelationShip Between Department & Employee
-
-            #endregion
-
-            #region 8 - RelationShip Between Department & Employee Part 2
-
-            #endregion
+            
         }
     }
 }

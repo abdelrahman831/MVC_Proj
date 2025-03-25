@@ -16,8 +16,8 @@ namespace Demo.DAL.Presistance.Data.Configrations.DashBoardConfiguration
             builder.Property(A => A.Id).UseIdentityColumn(10, 10);
             builder.Property(A => A.LogLevel).HasColumnType("nvarchar(50)").IsRequired();
             builder.Property(A => A.Status).HasColumnType("bit").IsRequired();
-            builder.Property(A => A.Message).HasColumnType("nvarchar(500)").IsRequired();
-            builder.Property(A => A.Exception).HasColumnType("nvarchar(500)").IsRequired();
+            builder.Property(A => A.Message).HasColumnType("nvarchar(max)").IsRequired();
+            builder.Property(A => A.Exception).HasColumnType("nvarchar(max)");
             builder.Property(A => A.LastModifiedOn).HasComputedColumnSql("GETDATE()");
             builder.Property(A => A.CreatedOn).HasDefaultValueSql("GETDATE()");
         }

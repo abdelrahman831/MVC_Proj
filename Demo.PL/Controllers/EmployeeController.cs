@@ -1,10 +1,14 @@
 ﻿using AutoMapper;
+using Dapper;
+using Demo.BLL.DTOS;
 using Demo.BLL.DTOS.Employees;
+using Demo.BLL.Services.DashBoard;
 using Demo.BLL.Services.Employees;
 using Demo.DAL.Entities.Employees;
 using Demo.PL.ViewModels.Employee;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -18,16 +22,28 @@ namespace Demo.PL.Controllers
         private readonly IMapper _mapper;
         private readonly Serilog.ILogger _logger;
         private readonly IWebHostEnvironment _environment;
+        private readonly IActivityService _activityService;
 
-        public EmployeeController(IEmployeeService employeeService, IMapper mapper, IWebHostEnvironment environment)
+        public EmployeeController(IActivityService activityService, IEmployeeService employeeService, IMapper mapper, IWebHostEnvironment environment)
         {
             _employeeService = employeeService;
             _mapper = mapper;
             _logger = Log.ForContext<EmployeeController>();
             _environment = environment;
+            _activityService = activityService;
+        }
+
+        private async Task SaveLogToDb(string level, string message, string exception = null)
+        {
+            using (var connection = new SqlConnection("Server=sql.bsite.net\\MSSQL2016;Database=mvcproj_mvcproj_;User Id=mvcproj_mvcproj_;Password=mvcproj;TrustServerCertificate=True;MultipleActiveResultSets=true"))
+            {
+                var query = "INSERT INTO Logs (LogLevel, Message, Exception) VALUES (@LogLevel, @Message, @Exception)";
+                await connection.ExecuteAsync(query, new { LogLevel = level, Message = message, Exception = exception });
+            }
         }
 
 
+        #region Search Employees
         [HttpGet]
         public async Task<IActionResult> SearchEmployees(string searchValue)
         {
@@ -43,9 +59,11 @@ namespace Demo.PL.Controllers
             return PartialView("~/Views/Employee/Partials/_EmployeeTablePartial.cshtml", employees);
 
         }
+        #endregion
 
 
 
+        #region Index
         [HttpGet]
         public async Task<IActionResult> Index()
         {
@@ -53,43 +71,58 @@ namespace Demo.PL.Controllers
             var employees = await _employeeService.GetAllEmployeesAsync();
             return View(employees);
         }
+        #endregion
 
+        #region Create GET
         [HttpGet]
         public IActionResult Create() => View();
+        #endregion
 
+        #region Create POST
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(EmployeeViewModel employeeVM)
         {
             if (!ModelState.IsValid)
             {
-                _logger.Warning("Invalid model state for EmployeeViewModel: {@EmployeeVM}", employeeVM);
+                await SaveLogToDb("EMPWarning", "Failed to create employee", employeeVM.ToString());
                 return View(employeeVM);
             }
 
             try
             {
-                _logger.Information("Creating new employee: {@EmployeeVM}", employeeVM);
+
                 var employeeDto = _mapper.Map<EmployeeToCreateDto>(employeeVM);
-                var result =await _employeeService.CreateEmployeeAsync(employeeDto);
+                var result = await _employeeService.CreateEmployeeAsync(employeeDto);
 
                 if (result > 0)
                 {
+                    await _activityService.AddActivity(new DashBoardActivityDto
+                    {
+                        LogLevel = "EMPCREATEINFO",
+                        Message = $"Employee created successfully: {employeeVM.Name}",
+                        Status = true,
+                        Exception = employeeVM.Name,
+                        CreatedAt = DateTime.Now
+                    });
+
                     TempData["Message"] = "Employee created successfully!";
                     return RedirectToAction("Index");
                 }
 
-                _logger.Warning("Failed to create employee: {@EmployeeVM}", employeeVM);
+                await SaveLogToDb("EMPWarning", "Failed to create employee", employeeVM.ToString());
                 ModelState.AddModelError(string.Empty, "Failed to create employee.");
                 return View(employeeVM);
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error creating employee: {@EmployeeVM}", employeeVM);
+                await SaveLogToDb("EMPError", "Error creating employee", ex.Message);
                 return View("Error", "An error occurred while creating the employee.");
             }
         }
+        #endregion
 
+        #region Details GET
         [HttpGet]
         public async Task<IActionResult> Details(int? id)
         {
@@ -97,10 +130,12 @@ namespace Demo.PL.Controllers
                 return BadRequest();
 
             _logger.Information("Fetching details for employee ID: {Id}", id);
-            var employee =await _employeeService.GetEmployeesByIdAsync(id.Value);
+            var employee = await _employeeService.GetEmployeesByIdAsync(id.Value);
             return employee == null ? NotFound() : View(employee);
         }
+        #endregion
 
+        #region Edit GET
         [HttpGet]
         public async Task<IActionResult> Edit(int? id)
         {
@@ -109,11 +144,10 @@ namespace Demo.PL.Controllers
 
             try
             {
-                _logger.Information("Fetching employee for edit: ID {Id}", id);
-                var employee =await _employeeService.GetEmployeesByIdAsync(id.Value);
+
+                var employee = await _employeeService.GetEmployeesByIdAsync(id.Value);
                 var employeevm = _mapper.Map<EmployeeViewModel>(employee);
-                _logger.Information("Employee fetched for edit: {@EmployeeVM}", employeevm);
-                _logger.Information("Edit GET - Employee ID: {Id}", employeevm.Id);
+
                 return employeevm == null ? NotFound() : View(employeevm);
             }
             catch (Exception ex)
@@ -123,7 +157,9 @@ namespace Demo.PL.Controllers
             }
 
         }
+        #endregion
 
+        #region Edit POST
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(EmployeeViewModel employeeVM)
@@ -131,7 +167,7 @@ namespace Demo.PL.Controllers
             var id = employeeVM.Id;
             if (!ModelState.IsValid)
             {
-                
+                await SaveLogToDb("EMPWarning", "Failed to update employee", employeeVM.ToString());
                 return View(employeeVM);
             }
 
@@ -139,6 +175,7 @@ namespace Demo.PL.Controllers
             {
                 if (employeeVM.Id == 0 && employeeVM is null)
                 {
+                    await SaveLogToDb("EMPEDITWarning", "Failed to update employee", employeeVM.ToString());
                     ModelState.AddModelError(string.Empty, "Failed to update employee.");
                     return View(employeeVM);
                 }
@@ -147,23 +184,32 @@ namespace Demo.PL.Controllers
                     var result = await _employeeService.UpdateEmployeeAsync(_mapper.Map<EmployeeViewModel, EmployeeToUpdateDto>(employeeVM));
                     if (result > 0)
                     {
+                        await _activityService.AddActivity(new DashBoardActivityDto
+                        {
+                            LogLevel = "EMPEDITINFO",
+                            Message = $"Employee updated successfully: {employeeVM.Name}",
+                            Status = true,
+                            Exception = employeeVM.Name,
+                            CreatedAt = DateTime.Now
+                        });
                         TempData["Message"] = "Employee updated successfully!";
                         return RedirectToAction("Index");
                     }
                 }
-                
 
-                _logger.Warning("Failed to update employee: {@EmployeeVM}", employeeVM);
+                await SaveLogToDb("EMPWarning", "Failed to update employee", employeeVM.ToString());
                 ModelState.AddModelError(string.Empty, "Failed to update employee.");
                 return View(employeeVM);
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error updating employee: {@EmployeeVM}", employeeVM);
+                await SaveLogToDb("EMPError", "Error updating employee", ex.Message);
                 return View("Error", "An error occurred while updating the employee.");
             }
         }
+        #endregion
 
+        #region Delete GET
         [HttpGet]
         public async Task<IActionResult> Delete(int? id)
         {
@@ -174,30 +220,41 @@ namespace Demo.PL.Controllers
             var employee = await _employeeService.GetEmployeesByIdAsync(id.Value);
             return employee == null ? NotFound() : View(employee);
         }
+        #endregion
 
+        #region Delete POST
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
             try
             {
-                _logger.Information("Deleting employee: ID {Id}", id);
-                var result =await  _employeeService.DeleteEmployeeAsync(id);
+                var employee = await _employeeService.GetEmployeesByIdAsync(id);
+                var result = await _employeeService.DeleteEmployeeAsync(id);
                 if (result)
                 {
+                    await _activityService.AddActivity(new DashBoardActivityDto
+                    {
+                        LogLevel = "EMPDELETEINFO",
+                        Message = $"Employee deleted successfully: ID {id}",
+                        Status = true,
+                        Exception = employee.Name,
+                        CreatedAt = DateTime.Now
+                    });
                     TempData["Message"] = "Employee deleted successfully!";
                     return RedirectToAction("Index");
                 }
 
-                _logger.Warning("Failed to delete employee: ID {Id}", id);
+                await SaveLogToDb("EMPWarning", "Failed to delete employee", id.ToString());
                 ModelState.AddModelError(string.Empty, "Failed to delete employee.");
                 return View("Index");
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error deleting employee: ID {Id}", id);
+                await SaveLogToDb("EMPError", "Error deleting employee", ex.Message);
                 return View("Error", "An error occurred while deleting the employee.");
             }
-        }
+        } 
+        #endregion
     }
 }

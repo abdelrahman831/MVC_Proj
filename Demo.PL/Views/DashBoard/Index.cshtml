@@ -112,49 +112,161 @@
                     </div>
                 </div>
 
-                <div class="card-body">
+                <div class="card-body" style="overflow-y:scroll; height:400px;">
                     <div class="timeline">
 
-            
+                        @foreach (var activity in Model.Activity)
+                        {
                             @* Notify New User Registration *@
                             <div class="d-flex mb-3">
 
-                                <div class="flex-shrink-0">
-                                    <div class="bg-primary bg-opacity-10 p-2 rounded">
-                                        <i class="fas fa-user-plus text-primary"></i>
+
+                                @if (activity.LogLevel == "LogOut")
+                                {
+                                    <div class="flex-shrink-0">
+                                        <div class="bg-primary bg-opacity-10 p-2 rounded">
+                                            <i class="fa-solid fa-right-from-bracket text-danger"></i>
+                                        </div>
                                     </div>
-                                </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-1">User @activity.Exception Has Logged Out</h6>
+                                        <p class="text-muted small mb-0">At @(activity.CreatedAt)</p>
+                                    </div>
 
-                                <div class="flex-grow-1 ms-3">
-                                    <h6 class="mb-1">New user registered</h6>
-                                    <p class="text-muted small mb-0">2 minutes ago</p>
-                                </div>
+                                }
+                                else if (activity.LogLevel == "LOGIN")
+                                {
+                                    <div class="flex-shrink-0">
+                                        <div class="bg-primary bg-opacity-10 p-2 rounded">
+                                            <i class="fas fa-sign-in-alt text-primary text-success"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-1">User @activity.Exception Has Logged In</h6>
+                                        <p class="text-muted small mb-0">At @(activity.CreatedAt)</p>
+                                    </div>
+                                }
+                                else if (activity.LogLevel == "ResetPwd")
+                                {
+                                    <div class="flex-shrink-0">
+                                        <div class="bg-primary bg-opacity-10 p-2 rounded">
+                                            <i class="fa-solid fa-key"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-1">Password Reset Successfuly for User @activity.Exception</h6>
+                                        <p class="text-muted small mb-0">At @(activity.CreatedAt)</p>
+                                    </div>
+                                }
+                                else if (activity.LogLevel == "SenResetPwdUrl")
+                                {
+                                    <div class="flex-shrink-0">
+                                        <div class="bg-primary bg-opacity-10 p-2 rounded">
+                                            <i class="fa-solid fa-paper-plane text-warning"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-1">Reset Link For User @activity.Exception Has Been Sent Successfully</h6>
+                                        <p class="text-muted small mb-0">At @(activity.CreatedAt)</p>
+                                    </div>
+                                }
+                                else if (activity.LogLevel == "REGISTER")
+                                {
+                                    <div class="flex-shrink-0">
+                                        <div class="bg-primary bg-opacity-10 p-2 rounded">
+                                            <i class="fas fa-user-plus text-primary"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-1">User @activity.Exception Have Registered. Welcome!</h6>
+                                        <p class="text-muted small mb-0">At @(activity.CreatedAt)</p>
+                                    </div>
+                                }
+                                else if (activity.LogLevel == "DEPCREATEINFO")
+                                {
+                                    <div class="flex-shrink-0">
+                                        <div class="bg-primary bg-opacity-10 p-2 rounded">
+                                            <i class="fa-solid fa-building-circle-check text-success"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-1">Department @activity.Exception Created by @(User.Identity?.Name ?? "Unkown") </h6>
+                                        <p class="text-muted small mb-0">At @(activity.CreatedAt)</p>
+                                    </div>
+                                }
+                                else if (activity.LogLevel == "DEPDELETEINFO")
+                                {
+                                    <div class="flex-shrink-0">
+                                        <div class="bg-primary bg-opacity-10 p-2 rounded">
+                                            <i class="fa-solid fa-building-circle-xmark text-danger"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-1">Department @activity.Exception Deleted by @(User.Identity?.Name ?? "Unkown") </h6>
+                                        <p class="text-muted small mb-0">At @(activity.CreatedAt)</p>
+                                    </div>
+                                }
+                                else if (activity.LogLevel == "DEPEDITINFO")
+                                {
+                                    <div class="flex-shrink-0">
+                                        <div class="bg-primary bg-opacity-10 p-2 rounded">
+                                            <i class="fa-solid fa-building-circle-exclamation text-warning"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-1">Department @activity.Exception Modified by @(User.Identity?.Name ?? "Unkown") </h6>
+                                        <p class="text-muted small mb-0">At @(activity.CreatedAt)</p>
+                                    </div>
+                                }
+                                else if (activity.LogLevel == "EMPEDITINFO")
+                                {
+                                    <div class="flex-shrink-0">
+                                        <div class="bg-primary bg-opacity-10 p-2 rounded">
+                                            <i class="fa-solid fa-user-pen text-warning"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-1">Employee @activity.Exception Modified by @(User.Identity?.Name ?? "Unkown") </h6>
+                                        <p class="text-muted small mb-0">At @(activity.CreatedAt)</p>
+                                    </div>
+                                }
+                                else if (activity.LogLevel == "EMPCREATEINFO")
+                                {
+                                    <div class="flex-shrink-0">
+                                        <div class="bg-primary bg-opacity-10 p-2 rounded">
+                                            <i class="fa-solid fa-user-check text-success"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-1">Employee @activity.Exception Created by @(User.Identity?.Name ?? "Unkown") </h6>
+                                        <p class="text-muted small mb-0">At @(activity.CreatedAt)</p>
+                                    </div>
+                                }
+                                else if (activity.LogLevel == "EMPDELETEINFO")
+                                {
+                                    <div class="flex-shrink-0">
+                                        <div class="bg-primary bg-opacity-10 p-2 rounded">
+                                            <i class="fa-solid fa-user-xmark text-danger"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-1">Employee @activity.Exception Deleted by @(User.Identity?.Name ?? "Unkown") </h6>
+                                        <p class="text-muted small mb-0">At @(activity.CreatedAt)</p>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="flex-shrink-0">
+                                        <div class="bg-primary bg-opacity-10 p-2 rounded">
+                                            <i class="fa-solid fa-info-circle"></i>
+                                        </div>
+                                    </div>
+                                }
+
 
                             </div>
-                        
+                        }
 
-                        <div class="d-flex mb-3">
-                            <div class="flex-shrink-0">
-                                <div class="bg-success bg-opacity-10 p-2 rounded">
-                                    <i class="fas fa-check text-success"></i>
-                                </div>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <h6 class="mb-1">Project milestone completed</h6>
-                                <p class="text-muted small mb-0">1 hour ago</p>
-                            </div>
-                        </div>
-                        <div class="d-flex">
-                            <div class="flex-shrink-0">
-                                <div class="bg-warning bg-opacity-10 p-2 rounded">
-                                    <i class="fas fa-bell text-warning"></i>
-                                </div>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <h6 class="mb-1">New feature release</h6>
-                                <p class="text-muted small mb-0">2 hours ago</p>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>

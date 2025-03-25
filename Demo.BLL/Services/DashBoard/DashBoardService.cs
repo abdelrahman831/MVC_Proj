@@ -52,7 +52,7 @@ namespace Demo.BLL.Services.DashBoard
         {
             var users = _userManager.Users;
 
-            var LoggedInUsers = users.Where(u => u.LastLogin.HasValue && u.LastLogin.Value.Date == DateTime.Now.Date).Count();
+            var LoggedInUsers = users.Where(u => u.LastActivity.HasValue && u.LastActivity.Value.Date == DateTime.Now.Date).Count();
 
             return Task.FromResult(LoggedInUsers);
         }
