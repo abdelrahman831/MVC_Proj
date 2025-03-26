@@ -1,15 +1,9 @@
-using AutoMapper;
 using Demo.BLL.Services.Departments;
 using Demo.BLL.Services.Employees;
 using Demo.DAL.Presistance.Data;
-using Demo.DAL.Presistance.Repositories.Departments;
-using Demo.DAL.Presistance.Repositories.Employees;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Demo.PL.Mapping.Profiles;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Demo.DAL.Presistance.UnitOfWork;
 using Demo.PL.Mapping.Profiles.Departments;
 using Demo.BLL.Mapping.Profiles.Employees;
@@ -17,11 +11,11 @@ using Demo.BLL.Mapping.Profiles.Departments;
 using Demo.BLL.Services.Attacments;
 using Demo.DAL.Entities.Identity;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Demo.BLL.Services.EmailService;
-using Demo.DAL.Presistance.Repositories.DashBoardRepositories;
 using Demo.BLL.Services.DashBoard;
-using Google.Apis.Auth.AspNetCore3;
+using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.AspNetCore.Authentication.Google;
+
 namespace Demo.PL
 {
     public class Program
@@ -87,25 +81,28 @@ namespace Demo.PL
 
             Log.Logger = new LoggerConfiguration().WriteTo.File("logs/myapp.txt", rollingInterval: RollingInterval.Day).CreateLogger();
 
-            //builder.Host.UseSerilog();
 
-            builder.Services.AddAuthentication(o =>
-            {
-                // This forces challenge results to be handled by Google OpenID Handler, so there's no
-                // need to add an AccountController that emits challenges for Login.
-                o.DefaultChallengeScheme = GoogleOpenIdConnectDefaults.AuthenticationScheme;
-                // This forces forbid results to be handled by Google OpenID Handler, which checks if
-                // extra scopes are required and does automatic incremental auth.
-                o.DefaultForbidScheme = GoogleOpenIdConnectDefaults.AuthenticationScheme;
-                // Default scheme that will handle everything else.
-                // Once a user is authenticated, the OAuth2 token info is stored in cookies.
-                o.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-            })
-        .AddCookie().AddGoogleOpenIdConnect(options =>
-            {
-                options.ClientId = builder.Configuration["Authentication:Google:ClientId"];
-                options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
-            });
+
+
+       //     builder.Services.AddAuthentication()
+       //.AddGoogle(options =>
+       //{
+       //    options.ClientId = "779795901287-o7khjtcj0d7014b99mf4v8e3327rfbge.apps.googleusercontent.com";
+       //    options.ClientSecret = "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";
+       //    options.Events.OnRemoteFailure = context =>
+       //    {
+       //        Console.WriteLine($"Errore Google OAuth: {context.Failure?.Message} {context.Request}");
+       //        context.HandleResponse();
+       //        return Task.CompletedTask;
+       //    };// Deve corrispondere a quello nella Console Google
+       //});
+
+       //     builder.Services.ConfigureApplicationCookie(options =>
+       //     {
+       //         options.Cookie.SameSite = SameSiteMode.None;
+       //         options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+       //     });
+
 
             var app = builder.Build();
 
@@ -117,10 +114,18 @@ namespace Demo.PL
                 app.UseHsts();
             }
 
+
+
             app.UseHttpsRedirection();
             app.UseStaticFiles();
 
             app.UseRouting();
+            app.Use(async (context, next) =>
+            {
+                context.Response.Cookies.Delete(".AspNetCore.Correlation.Google");
+                context.Response.Cookies.Delete(".AspNetCore.OpenIdConnect.Nonce");
+                await next();
+            });
             app.UseAuthentication();
             app.UseAuthorization();
 

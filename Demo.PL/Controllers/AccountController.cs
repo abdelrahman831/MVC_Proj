@@ -51,28 +51,28 @@ namespace Demo.PL.Controllers
             }
         }
 
-        [HttpPost]
-        public async Task<IActionResult> GoogleLogin(string credential)
-        {
-            try
-            {
-                // Validazione del token restituito da Google
-                var payload = await GoogleJsonWebSignature.ValidateAsync(credential);
+        //[HttpGet("signin-google")]
+        //public async Task<IActionResult> GoogleLogin(string credential)
+        //{
+        //    try
+        //    {
+        //        // Validazione del token restituito da Google
+        //        var payload = await GoogleJsonWebSignature.ValidateAsync(credential);
 
-                // Qui puoi usare i dati dell'utente, ad esempio:
-                var userEmail = payload.Email;
-                var userName = payload.Name;
-                var userId = payload.Subject; // ID univoco Google
+        //        // Qui puoi usare i dati dell'utente, ad esempio:
+        //        var userEmail = payload.Email;
+        //        var userName = payload.Name;
+        //        var userId = payload.Subject; // ID univoco Google
 
-                // Se vuoi registrare l'utente nel database, fallo qui
+        //        // Se vuoi registrare l'utente nel database, fallo qui
 
-                return Ok(new { Success = true, Email = userEmail, Name = userName });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { Success = false, Message = "Errore nella validazione", Error = ex.Message });
-            }
-        }
+        //        return Ok(new { Success = true, Email = userEmail, Name = userName });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return BadRequest(new { Success = false, Message = "Errore nella validazione", Error = ex.Message });
+        //    }
+        //}
 
 
         #region Register Get
