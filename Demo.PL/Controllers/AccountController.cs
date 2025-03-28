@@ -31,7 +31,7 @@ namespace Demo.PL.Controllers
 
 
         #region Ctor Ingection
-        public AccountController(RoleManager<IdentityRole> roleManager,IActivityService activityService, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IEmailService emailSettings)
+        public AccountController(RoleManager<IdentityRole> roleManager, IActivityService activityService, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IEmailService emailSettings)
         {
             _userManager = userManager;
             _signinUser = signInManager;
@@ -77,17 +77,38 @@ namespace Demo.PL.Controllers
 
         #region Register Get
         [HttpGet]
-        public IActionResult Register()
+        public async Task<IActionResult> Register()
         {
-            return View();
+            try
+            {
+                return View();
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = "An error occurred";
+
+                await SaveLogToDb("Register", "An error occurred", ex.Message);
+                return View();
+            }
         }
         #endregion
 
         #region Login Get
         [HttpGet]
-        public IActionResult Login()
+        public async Task<IActionResult> Login()
         {
-            return View();
+            try
+            {
+                return View();
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = "An error occurred";
+
+                await SaveLogToDb("Login", "An error occurred", ex.Message);
+                return View();
+
+            }
 
         }
         #endregion
@@ -96,63 +117,100 @@ namespace Demo.PL.Controllers
         [HttpGet]
         public async Task<IActionResult> LogOut(LoginViewModel loginViewModel)
         {
-
-            ClaimsPrincipal currentUser = this.User;
-            var user = await _userManager.GetUserAsync(currentUser);
-
-
-
-            if (user is not null && user.Email is not null)
+            try
             {
-                user.LastLogin = null;
-                await _userManager.UpdateAsync(user);
 
-                var activity = new DashBoardActivityDto
+                ClaimsPrincipal currentUser = this.User;
+                var user = await _userManager.GetUserAsync(currentUser);
+
+
+
+                if (user is not null && user.Email is not null)
                 {
-                    LogLevel = "LogOut",
-                    Status = true,
-                    Message = "User Logged Out",
-                    Exception = user.Email,
-                    CreatedAt = DateTime.Now
-                };
+                    user.LastLogin = null;
+                    await _userManager.UpdateAsync(user);
 
-                await _activityService.AddActivity(activity);
+                    var activity = new DashBoardActivityDto
+                    {
+                        LogLevel = "LogOut",
+                        Status = true,
+                        Message = "User Logged Out",
+                        Exception = user.Email,
+                        CreatedAt = DateTime.Now
+                    };
+
+                    await _activityService.AddActivity(activity);
+                }
+
+                await _signinUser.SignOutAsync();
+
+
+
+                return RedirectToAction("Login", "Account");
             }
-
-            await _signinUser.SignOutAsync();
-
-
-
-            return RedirectToAction("Login", "Account");
+            catch (Exception ex)
+            {
+                TempData["Error"] = "An error occurred";
+                await SaveLogToDb("LogOut", "An error occurred", ex.Message);
+                return RedirectToAction("Login", "Account");
+            }
         }
         #endregion
 
         #region ForgetPassword Get
         [HttpGet]
-        public IActionResult ForgetPassword()
+        public async Task<IActionResult> ForgetPassword()
         {
-            return View();
+            try
+            {
+                return View();
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = "An error occurred";
+                await SaveLogToDb("ForgetPassword", "An error occurred", ex.Message);
+                return View();
+            }
         }
         #endregion
 
         #region Check Your Inbox Get
         [HttpGet]
-        public IActionResult CheckYourInbox()
+        public async Task<IActionResult> CheckYourInbox()
         {
-            return View();
+            try
+            {
+                return View();
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = "An error occurred";
+                await SaveLogToDb("CheckYourInbox", "An error occurred", ex.Message);
+                return View();
+            }
         }
         #endregion
 
         #region Reset Password Get
         [HttpGet]
-        public IActionResult ResetPassword(string email, string token)
+        public async Task<IActionResult> ResetPassword(string email, string token)
         {
-            TempData["Email"] = email;
-            TempData["Token"] = token;
+            try
+            {
+                if (email is null || token is null)
+                {
+                    TempData["Error"] = "An error occurred";
 
-
-            return View();
-
+                    return RedirectToAction("Register");
+                }
+                return View(new ResetPasswordViewModel());
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = "An error occurred";
+                await SaveLogToDb("ResetPassword", "An error occurred", ex.Message);
+                return RedirectToAction("Register");
+            }
         }
         #endregion
 
@@ -161,11 +219,11 @@ namespace Demo.PL.Controllers
         public async Task<IActionResult> ResetPassword(ResetPasswordViewModel resetPasswordViewModel)
         {
             try
-            { 
+            {
                 if (ModelState.IsValid)
                 {
-                    string email = TempData["Email"] as string;
-                    string token = TempData["Token"] as string;
+                    string email = TempData["Email"] as string ?? "NoEmail";
+                    string token = TempData["Token"] as string ?? "NoToken";
 
                     if (email is not null && token is not null)
                     {
@@ -213,13 +271,21 @@ namespace Demo.PL.Controllers
                         }
                     }
 
-                    return RedirectToAction("Register"); 
+                    return RedirectToAction("Register");
                 }
 
             }
             catch (Exception ex)
             {
-                await SaveLogToDb("Reset Password","An error occured", ex.Message);
+                TempData["Error"] = "An error occurred";
+                await SaveLogToDb("Reset Password", "An error occured", ex.Message);
+                //Notify the Developer
+                var email = new DAL.Entities.Identity.Email()
+                {
+                    To = "mvcprojectemployeerepositorian@gmail.com",
+                    Subject = "An error occured In your system, see the log trace for more details",
+                    Body = ex.Message
+                };
 
             }
             return View(resetPasswordViewModel);
@@ -233,48 +299,56 @@ namespace Demo.PL.Controllers
             try
             {
 
-            
-            if (ModelState.IsValid)
-            {
-                var user = await _userManager.FindByEmailAsync(forgetpwdVm.Email);
-                if (user is not null)
+
+                if (ModelState.IsValid)
                 {
-                    var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-
-                    var url = Url.Action("ResetPassword", "Account", new { email = user.Email, token }, Request.Scheme);
-
-                    var email = new Demo.DAL.Entities.Identity.Email()
+                    var user = await _userManager.FindByEmailAsync(forgetpwdVm.Email);
+                    if (user is not null)
                     {
-                        To = forgetpwdVm.Email,
-                        Subject = "Reset Your Password",
-                        Body = url
-                    };
-                    _emailService.SendEmail(email);
+                        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
 
-                    TempData["Message"] = "The email was successfully sent";
-                    TempData["Email"] = user.Email;
-                    TempData["Token"] = token;
+                        var url = Url.Action("ResetPassword", "Account", new { email = user.Email, token }, Request.Scheme);
 
-                    var activity = new DashBoardActivityDto
-                    {
-                        LogLevel = "SenResetPwdUrl",
-                        Status = true,
-                        Message = "Reset Pwd Link was sent Successfully",
-                        Exception = user?.Email,
-                        CreatedAt = DateTime.Now
-                    };
+                        var email = new Demo.DAL.Entities.Identity.Email()
+                        {
+                            To = forgetpwdVm.Email,
+                            Subject = "Reset Your Password",
+                            Body = url
+                        };
+                        _emailService.SendEmail(email);
 
-                    await _activityService.AddActivity(activity);
+                        TempData["Message"] = "The email was successfully sent";
+                        TempData["Email"] = user.Email;
+                        TempData["Token"] = token;
 
-                    return RedirectToAction("CheckYourInbox");
+                        var activity = new DashBoardActivityDto
+                        {
+                            LogLevel = "SenResetPwdUrl",
+                            Status = true,
+                            Message = "Reset Pwd Link was sent Successfully",
+                            Exception = user?.Email,
+                            CreatedAt = DateTime.Now
+                        };
+
+                        await _activityService.AddActivity(activity);
+
+                        return RedirectToAction("CheckYourInbox");
+                    }
+                    await SaveLogToDb("SendResetPwdUrl", "No user found", forgetpwdVm.Email);
+                    ModelState.AddModelError(string.Empty, "Invalid operation");
                 }
-                await SaveLogToDb("SendResetPwdUrl", "No user found", forgetpwdVm.Email);
-                ModelState.AddModelError(string.Empty, "Invalid operation");
-            }
             }
             catch (Exception ex)
             {
                 await SaveLogToDb("SendResetPwdUrl", "An error occured", ex.Message);
+                TempData["Error"] = "An error occurred";
+
+                var email = new DAL.Entities.Identity.Email()
+                {
+                    To = "mvcprojectemployeerepositorian@gmail.com",
+                    Subject = "An error occured In your system, see the log trace for more details",
+                    Body = ex.Message
+                };
             }
 
             return View(forgetpwdVm);
@@ -285,7 +359,7 @@ namespace Demo.PL.Controllers
         [HttpPost]
         public async Task<IActionResult> Login(LoginViewModel loginViewModel)
         {
-            SaveLogToDb("LOGIN", "Starting login process", loginViewModel.UserName);
+            await SaveLogToDb("LOGIN", "Starting login process", loginViewModel.UserName);
             try
             {
 
@@ -295,6 +369,26 @@ namespace Demo.PL.Controllers
                     var user = await _userManager.FindByEmailAsync(loginViewModel.UserName);
                     if (user is not null)
                     {
+                        if (!await _userManager.IsEmailConfirmedAsync(user))
+                        {
+                            await SaveLogToDb("LOGIN", "Email not confirmed", user.Email);
+                            ModelState.AddModelError(string.Empty, "Email not confirmed");
+                            TempData["Message"] = "EmailNotConfirmed";
+
+                            var email = new Demo.DAL.Entities.Identity.Email()
+                            {
+                                To = user.Email,
+                                Subject = "Registration Confirmation",
+                                Body = $"Hi {user.FName} {user.LName} Your email is not verified yet please fill th Confirm Email form with this otp code:\n" +
+                            $" {await _userManager.GenerateEmailConfirmationTokenAsync(user)} "
+                            };
+                            _emailService.SendEmail(email);
+
+
+                            TempData["Email"] = user.Email;
+
+                            return RedirectToAction("ConfirmRegister");
+                        }
 
                         var check = await _userManager.CheckPasswordAsync(user, loginViewModel.Password);
                         if (check)
@@ -320,31 +414,39 @@ namespace Demo.PL.Controllers
                             }
                             else
                             {
-                                SaveLogToDb("LOGIN", "Sign-in failed", user.Email);
+                                await SaveLogToDb("LOGIN", "Sign-in failed", user.Email);
                             }
                         }
                         else
                         {
-                            SaveLogToDb("LOGIN", "Password verification failed", user.Email);
+                            await SaveLogToDb("LOGIN", "Password verification failed", user.Email);
                             ModelState.AddModelError(string.Empty, "IncorrectPassword");
                             TempData["Message"] = "IncorrectPassword";
                         }
                     }
                     else
                     {
-                        SaveLogToDb("LOGIN", "No user found", loginViewModel.UserName);
+                        await SaveLogToDb("LOGIN", "No user found", loginViewModel.UserName);
                         ModelState.AddModelError(string.Empty, "User Name Not Found");
                         TempData["Message"] = "UserNameNotFound";
                     }
                 }
                 else
                 {
-                    SaveLogToDb("LOGIN", "Model state invalid");
+                    await SaveLogToDb("LOGIN", "Model state invalid");
                 }
             }
             catch (Exception ex)
             {
-                SaveLogToDb("LOGIN", "An error occurred while logging in", ex.Message);
+                await SaveLogToDb("LOGIN", "An error occurred while logging in", ex.Message);
+                TempData["Error"] = "An error occurred";
+
+                var email = new DAL.Entities.Identity.Email()
+                {
+                    To = "mvcprojectemployeerepositorian@gmail.com",
+                    Subject = "An error occured In your system, see the log trace for more details",
+                    Body = ex.Message
+                };
             }
             return View(loginViewModel);
         }
@@ -356,11 +458,11 @@ namespace Demo.PL.Controllers
         {
             try
             {
-                SaveLogToDb("REGISTER", "Starting registration process", registerViewModel.Email);
+                await SaveLogToDb("REGISTER", "Starting registration process", registerViewModel.Email);
 
                 if (ModelState.IsValid)
                 {
-                    SaveLogToDb("REGISTER", "Creating new user", registerViewModel.Email);
+                    await SaveLogToDb("REGISTER", "Creating new user", registerViewModel.Email);
 
                     var newUser = new ApplicationUser()
                     {
@@ -386,9 +488,9 @@ namespace Demo.PL.Controllers
 
                         await _activityService.AddActivity(activity);
 
-                        SaveLogToDb("REGISTER", "User created successfully, assigning role", registerViewModel.Email);
+                        await SaveLogToDb("REGISTER", "User created successfully, assigning role", registerViewModel.Email);
 
-                        if(!await _roleManager.RoleExistsAsync("User"))
+                        if (!await _roleManager.RoleExistsAsync("User"))
                         {
                             await _roleManager.CreateAsync(new IdentityRole("User"));
                         }
@@ -400,31 +502,100 @@ namespace Demo.PL.Controllers
                         {
                             To = registerViewModel.Email,
                             Subject = "Registration Confirmation",
-                            Body = $"Hi {registerViewModel.FName} {registerViewModel.LName} You have successfully registered to our web app"
+                            Body = $"Hi {registerViewModel.FName} {registerViewModel.LName} You have successfully registered to our web app\n" +
+                            $" please insert this code {await _userManager.GenerateEmailConfirmationTokenAsync(newUser)} in the otp form to confirm your email"
                         };
                         _emailService.SendEmail(email);
 
-                        return RedirectToAction("Login");
+
+                        TempData["Email"] = registerViewModel.Email;
+
+                        return RedirectToAction("ConfirmRegister");
                     }
                     else
                     {
-                        SaveLogToDb("REGISTER", "User creation failed", registerViewModel.Email);
+                        await SaveLogToDb("REGISTER", "User creation failed", registerViewModel.Email);
                         TempData["Error"] = result.Errors.Select(e => e.Description).ToList();
                     }
                 }
                 else
                 {
-                    SaveLogToDb("REGISTER", "Model state invalid");
+                    await SaveLogToDb("REGISTER", "Model state invalid");
                 }
             }
             catch (Exception ex)
             {
-                SaveLogToDb("REGISTER", "An error occurred while registering", ex.Message);
+                await SaveLogToDb("REGISTER", "An error occurred while registering", ex.Message);
+                TempData["Error"] = "An error occurred";
+
+                var email = new DAL.Entities.Identity.Email()
+                {
+                    To = "mvcprojectemployeerepositorian@gmail.com",
+                    Subject = "An error occured In your system, see the log trace for more details",
+                    Body = ex.Message
+                };
             }
             return View(registerViewModel);
         }
         #endregion
 
+        #region Confirm Register GET
+        [HttpGet]
+        public async Task<IActionResult> ConfirmRegister()
+        {
+            try
+            {
+                return View(new ConfirmEmailViewModel());
+
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = "An error occurred";
+                await SaveLogToDb("ConfirmRegister", "An error occurred", ex.Message);
+                return View();
+            }
+        }
+        #endregion
+
+        #region Confirm Register POST
+        [HttpPost]
+        public async Task<IActionResult> ConfirmRegister(string otp)
+        {
+            try
+            {
+                var email = TempData["Email"] as string ?? "UNKNOWN";
+                var user = await _userManager.FindByEmailAsync(email);
+
+                if (user is not null)
+                {
+                    var result = await _userManager.ConfirmEmailAsync(user, otp);
+                    if (result.Succeeded)
+                    {
+                        TempData["Message"] = "Email confirmed successfully";
+                        return RedirectToAction("Login");
+                    }
+                    else
+                    {
+                        TempData["Error"] = result.Errors.Select(e => e.Description).ToList();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                await SaveLogToDb("ConfirmRegister", "An error occurred while confirming email", ex.Message);
+                TempData["Error"] = "An error occurred";
+
+                var email = new DAL.Entities.Identity.Email()
+                {
+                    To = "mvcprojectemployeerepositorian@gmail.com",
+                    Subject = "An error occured In your system, see the log trace for more details",
+                    Body = ex.Message
+                };
+            }
+            return View();
+        }
+        #endregion
     }
+
 }
 
