@@ -1,14 +1,12 @@
-﻿
-
-@if (!string.IsNullOrEmpty(TempData["Message"] as string))
+﻿@if (!string.IsNullOrEmpty(TempData["Message"] as string))
 {
     <div aria-live="polite" aria-atomic="true" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050;">
-        <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="toast-header">
-                <img src="~/img/checkmark.png" class="rounded me-2" alt="Success Icon" width="20" height="20">
-                <strong class="me-auto text-primary">Success!</strong>
-                <small class="text-muted">@DateTime.Now.ToString("hh:mm tt")</small>
-                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        <div class="toast show bg-success text-white" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-success text-white">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <strong class="me-auto">Successo!</strong>
+                <small>@DateTime.Now.ToString("HH:mm")</small>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Chiudi"></button>
             </div>
             <div class="toast-body">
                 @TempData["Message"]
@@ -17,26 +15,29 @@
     </div>
 }
 
-
 @if (TempData["Error"] is List<string> errors && errors.Any())
 {
-
-
-        <div class="toast position-fixed bottom-0 end-0 p-3" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="toast-body">
-            @foreach (var error in errors)
-            {
-                <li>@error</li>
-            }
-            <div class="mt-2 pt-2 border-top">
-                <button type="button" class="btn btn-primary btn-sm">Take action</button>
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="toast">Close</button>
+    <div aria-live="polite" aria-atomic="true" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050;">
+        <div class="toast show bg-danger text-white" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-danger text-white">
+                <strong class="me-auto"><i class="bi bi-exclamation-triangle-fill"></i> Errore</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                <ul class="mb-2">
+                    @foreach (var error in errors)
+                    {
+                        <li>@error</li>
+                    }
+                </ul>
+                <div class="d-flex justify-content-end">
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="toast">Chiudi</button>
+                </div>
             </div>
         </div>
     </div>
-
-
 }
+
 
 
 <!DOCTYPE html>
@@ -45,6 +46,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - MVC Project</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
 
     <!-- Bootstrap & Styles -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
