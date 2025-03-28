@@ -84,24 +84,7 @@ namespace Demo.PL
 
 
 
-       //     builder.Services.AddAuthentication()
-       //.AddGoogle(options =>
-       //{
-       //    options.ClientId = "779795901287-o7khjtcj0d7014b99mf4v8e3327rfbge.apps.googleusercontent.com";
-       //    options.ClientSecret = "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";
-       //    options.Events.OnRemoteFailure = context =>
-       //    {
-       //        Console.WriteLine($"Errore Google OAuth: {context.Failure?.Message} {context.Request}");
-       //        context.HandleResponse();
-       //        return Task.CompletedTask;
-       //    };// Deve corrispondere a quello nella Console Google
-       //});
 
-       //     builder.Services.ConfigureApplicationCookie(options =>
-       //     {
-       //         options.Cookie.SameSite = SameSiteMode.None;
-       //         options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-       //     });
 
 
             var app = builder.Build();
