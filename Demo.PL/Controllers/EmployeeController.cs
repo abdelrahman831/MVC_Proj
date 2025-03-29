@@ -3,11 +3,13 @@ using Dapper;
 using Demo.BLL.DTOS;
 using Demo.BLL.DTOS.Employees;
 using Demo.BLL.Services.DashBoard;
+using Demo.BLL.Services.Departments;
 using Demo.BLL.Services.Employees;
 using Demo.DAL.Entities.Employees;
 using Demo.PL.ViewModels.Employee;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -23,14 +25,16 @@ namespace Demo.PL.Controllers
         private readonly Serilog.ILogger _logger;
         private readonly IWebHostEnvironment _environment;
         private readonly IActivityService _activityService;
+        private readonly IDepartmentService _departmentService;
 
-        public EmployeeController(IActivityService activityService, IEmployeeService employeeService, IMapper mapper, IWebHostEnvironment environment)
+        public EmployeeController(IDepartmentService departmentService,IActivityService activityService, IEmployeeService employeeService, IMapper mapper, IWebHostEnvironment environment)
         {
             _employeeService = employeeService;
             _mapper = mapper;
             _logger = Log.ForContext<EmployeeController>();
             _environment = environment;
             _activityService = activityService;
+            _departmentService = departmentService;
         }
 
         private async Task SaveLogToDb(string level, string message, string exception = null)
@@ -75,7 +79,13 @@ namespace Demo.PL.Controllers
 
         #region Create GET
         [HttpGet]
-        public IActionResult Create() => View();
+        public async Task<IActionResult> Create()
+        {
+
+            var departments = await _departmentService.GetAllDepartmentsAsync();
+            ViewData["Departments"] = new SelectList(departments, "Id", "Name");
+            return View(new EmployeeViewModel());
+        }
         #endregion
 
         #region Create POST

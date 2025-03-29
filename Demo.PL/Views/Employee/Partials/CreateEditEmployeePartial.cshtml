@@ -1,7 +1,8 @@
 ﻿@model EmployeeViewModel
 @inject IDepartmentService departmentService
 @{
-    //var departmentList = ViewData["Departments"] as IEnumerable<DepartmentToReturnDto> ?? new List<DepartmentToReturnDto>();
+    //
+   
     var Departments = new SelectList(await departmentService.GetAllDepartmentsAsync(), nameof(DepartmentToReturnDto.Id), nameof(DepartmentToReturnDto.Name));
 
 }
@@ -114,7 +115,7 @@
                 }
             </div>
             <span asp-validation-for="Gender" class="text-danger"></span>
-        </div>
+        </div> 
 
 
         <!-- Employee Type Field -->
@@ -155,9 +156,9 @@
         {
             <div class="d-flex justify-content-center gap-3 mt-3">
                 <button type="submit" class="btn btn-primary px-4" style="background-color: #6a0dad; border-color: #6a0dad;">
-                    Create
+                    create
                 </button>
-                <a asp-controller="Employee" asp-action="Index" class="btn btn-outline-secondary px-4">Cancel</a>
+                <a asp-controller="employee" asp-action="index" class="btn btn-outline-secondary px-4">cancel</a>
             </div>
         }
 
@@ -165,12 +166,12 @@
         {
             <div class="d-flex justify-content-center gap-3 mt-3">
                 <button type="submit" class="btn btn-success px-4" style="background-color: #6a0dad; border-color: #6a0dad;">
-                    Save
+                    save
                 </button>
 
-                <a asp-action="Index" class="btn btn-outline-secondary px-4">Back to List</a>
+                <a asp-action="index" class="btn btn-outline-secondary px-4">back to list</a>
             </div>
         }
-
+ 
 
 </form>
