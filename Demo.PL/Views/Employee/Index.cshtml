@@ -86,67 +86,89 @@
 {
     <div class="table-responsive mt-3">
 
-    <div class="table table-striped table-hover mt-3" id="employeeTableContainer">
-        <table class="table table-striped table-hover text-center align-middle shadow-sm rounded">
-            <thead class="table-dark">
-                <tr>
-                    <th>Photo</th>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Type</th>
-                    <th>Age</th>
-                    <th>Salary</th>
-                    <th>Department</th>
-                    <th>Privecy Agreement</th>
-                    <th>Gender</th>
-                    <th>Actions</th>
-
-                </tr>
-            </thead>
-            <tbody id="employeeTableBody">
-                @foreach (var employee in Model)
-                {
+        <div class="table table-striped table-hover align-middle mb-0 mt-3 " id="employeeTableContainer">
+            <table class="table table-striped table-hover text-center align-middle shadow-sm rounded">
+                <thead class="table-dark">
                     <tr>
-                        <td>
-                            <img src="~/Files/Images/@(employee.ImagePath ?? "NotFound.png")" class="rounded-circle" width="40" height="40" />
-                        </td>
-                        <td>@employee.Name</td>
-                        <td>@employee.Email</td>
-                        <td>@employee.EmployeeType</td>
-                        <td>@employee.Age</td>
-                        <td>@employee.Salary</td>
-                        <td>
-                            @if (employee.DepartmentId is null || Departments.FirstOrDefault(d => d.Value == employee.DepartmentId.ToString()) is null)
-                            {
 
-                                <p>No Department</p>
-
-                            }
-                            else
-                            {
-                                <a asp-controller="Department" asp-action="Details" asp-route-id="@employee.DepartmentId.ToString()" class="text-primary fw-bold">
-                                    @(Departments.FirstOrDefault(d => d.Value == employee.DepartmentId.ToString()).Text)
-                                </a>
-                            }
-
-                        </td>
-                        <td>
-                            <span class="badge @(employee.IsActive ? "bg-success" : "bg-danger")">
-                                @(employee.IsActive ? "Yes" : "No")
-                            </span>
-                        </td>
-                        <td>@employee.Gender</td>
-                        @*  <td> @Html.PartialAsync("_ButtonsPartial", employee.Id.ToString())  </td> *@
-                        <partial name="_ButtonsPartial" model="@employee.Id.ToString()" />
-
+                        <th>Name</th>
+                        @* <th>Email</th> *@
+                        <th>Type</th>
+                        <th>Age</th>
+                        <th>Salary</th>
+                        <th>Privecy Agreement</th>
+                        <th>Gender</th>
+                        <th>Actions</th>
 
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody id="employeeTableBody">
+                    @foreach (var employee in Model)
+                    {
+                        <tr>
+                            <td>
+                                <div class="d-flex">
+                                    <img src="~/Files/Images/@(employee.ImagePath ?? "NotFound.png")" class="rounded-circle" style="width: 45px; height: 45px" />
+
+                                    <div class="ms-3">
+                                        <p class="fw-bold mb-1">@employee.Name</p>
+                                        <p class="text-muted mb-0">@employee.Email</p>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <td>
+
+
+
+
+                                @if (employee.DepartmentId is null || Departments.FirstOrDefault(d => d.Value == employee.DepartmentId.ToString()) is null)
+                                {
+                                    <p class="fw-normal mb-1">@employee.EmployeeType</p>
+
+                                    <p class="text-muted mb-0">No Department</p>
+                                }
+                                else
+                                {
+                                    <p class="fw-normal mb-1">@employee.EmployeeType</p>
+                                    <a asp-controller="Department" asp-action="Details" asp-route-id="@employee.DepartmentId.ToString()" class="text-primary fw-bold">
+                                        @(Departments.FirstOrDefault(d => d.Value == employee.DepartmentId.ToString()).Text)
+                                    </a>
+                                }
+
+                            </td>
+                            <td>@employee.Age</td>
+                            <td>@employee.Salary</td>
+
+                            <td>
+                                <span class="badge @(employee.IsActive ? "bg-success" : "bg-danger")">
+                                    @(employee.IsActive ? "Yes" : "No")
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                @if (employee.Gender?.ToLower() == "male")
+                                {
+                                    <i class="fa-solid fa-mars text-primary" title="Male"></i>
+                                }
+                                else
+                                {
+                                    <i class="fa-solid fa-venus text-danger" title="Female"></i>
+                                }
+
+                            </td>
+
+                            @*  <td> @Html.PartialAsync("_ButtonsPartial", employee.Id.ToString())  </td> *@
+                            <partial name="_ButtonsPartial" model="@employee.Id.ToString()" />
+
+
+                        </tr>
+                    }
+                </tbody>
+            </table>
         </div>
 
     </div>
+
 }
 else
 {

@@ -47,6 +47,65 @@
         position: relative;
         transition: background-color 0.3s ease;
         }
+        /* Contenitore della tabella */
+        .table-container {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        /* Hover sulle righe */
+        .table tbody tr:hover {
+            background: #f8f9fa !important;
+            transition: background 0.2s ease-in-out;
+        }
+
+        /* Immagini arrotondate migliorate */
+        .employee-img {
+            width: 45px;
+            height: 45px;
+            object-fit: cover;
+            border-radius: 50%;
+            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Badge migliorati */
+        .badge {
+            font-size: 0.85rem;
+            padding: 5px 10px;
+            border-radius: 8px;
+        }
+
+        /* Testi più leggibili */
+        .text-muted.small {
+            font-size: 0.85rem;
+        }
+
+        .icon-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            transition: transform 0.2s ease-in-out;
+        }
+
+            .icon-btn svg {
+                transition: fill 0.2s ease-in-out;
+            }
+
+            .icon-btn:hover svg {
+                fill: currentColor; /* Cambia il colore dell'icona quando ci passi sopra */
+                transform: scale(1.2);
+            }
+
+            .icon-btn:active {
+                transform: scale(1);
+            }
 
         .navbar-container {
         display: flex;
