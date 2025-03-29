@@ -21,5 +21,16 @@ namespace Demo.BLL.Services.EmailService
             client.Send("mvcprojectemployeerepositorian@gmail.com", email.To, email.Subject, email.Body);
 
         }
+
+        public void SendHtmlEmail(MailMessage email)
+        {
+            var client = new SmtpClient("smtp.gmail.com", 587);
+            client.EnableSsl = true;
+            //sender , reciever
+            client.Credentials = new NetworkCredential("mvcprojectemployeerepositorian@gmail.com", "fcmbohlntoscmwol");  //Generate Password 
+            email.From = new MailAddress("mvcprojectemployeerepositorian@gmail.com", "MVC Proj");
+            client.Send(email);
+
+        }
     }
 }
