@@ -15,6 +15,9 @@ using Demo.BLL.Services.EmailService;
 using Demo.BLL.Services.DashBoard;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Routing;
+
 
 namespace Demo.PL
 {
@@ -24,6 +27,35 @@ namespace Demo.PL
         {
 
             var builder = WebApplication.CreateBuilder(args);
+
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+            }).AddCookie().AddGoogle(option =>
+            {
+                option.ClientId = builder.Configuration.GetSection("GoogleKeys:ClientId").Value;
+                option.ClientSecret = builder.Configuration.GetSection("GoogleKeys:ClientSecret").Value;
+                option.CallbackPath = "/Account/signin-google";
+                option.Scope.Add("email");
+                option.Scope.Add("profile");
+                option.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                option.Events.OnRemoteFailure = ctx =>
+                {
+                    Console.WriteLine($"Google Authentication Failed: {ctx.Failure?.Message}");
+                    ctx.HandleResponse();
+                    return Task.CompletedTask;
+                };
+            });
+
+            builder.Services.ConfigureApplicationCookie(options =>
+            {
+                options.Cookie.SameSite = SameSiteMode.None;  // Necessario per i flussi cross-domain
+                options.Cookie.HttpOnly = true;
+                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;  // Necessario per HTTPS
+
+
+            });
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();
@@ -46,7 +78,7 @@ namespace Demo.PL
             builder.Services.AddControllersWithViews(options =>
             {
                 options.Filters.Add<UserActivityFilter>();
-            }); 
+            });
 
             builder.Services.AddAutoMapper(M => M.AddProfile(new ViemodelMappingProfiles()));
             builder.Services.AddAutoMapper(M => M.AddProfile(new DepartmentVieModelMappingProfiles()));
@@ -56,7 +88,6 @@ namespace Demo.PL
             builder.Services.AddScoped<IEmailService, EmailService>();
             builder.Services.AddScoped<IDashBoardService, DashBoardService>();
             builder.Services.AddScoped<IActivityService, ActivityService>();
-
 
             builder.Services.AddIdentity<ApplicationUser, IdentityRole>((options) =>
             {
@@ -78,14 +109,7 @@ namespace Demo.PL
 
             builder.Services.AddAuthorization();
 
-
             Log.Logger = new LoggerConfiguration().WriteTo.File("logs/myapp.txt", rollingInterval: RollingInterval.Day).CreateLogger();
-
-
-
-
-
-
 
             var app = builder.Build();
 
@@ -97,18 +121,11 @@ namespace Demo.PL
                 app.UseHsts();
             }
 
-
-
             app.UseHttpsRedirection();
             app.UseStaticFiles();
 
             app.UseRouting();
-            app.Use(async (context, next) =>
-            {
-                context.Response.Cookies.Delete(".AspNetCore.Correlation.Google");
-                context.Response.Cookies.Delete(".AspNetCore.OpenIdConnect.Nonce");
-                await next();
-            });
+
             app.UseAuthentication();
             app.UseAuthorization();
 
@@ -116,8 +133,11 @@ namespace Demo.PL
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}");
 
+            app.MapControllerRoute(
+                name: "GoogleResponse",
+                pattern: "Account/GoogleResponse");
+
             app.Run();
-            
-        }
+        }
     }
 }

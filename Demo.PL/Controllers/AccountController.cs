@@ -19,6 +19,9 @@ using Google.Apis.Services;
 using Google.Apis.Drive.v3;
 using Google.Apis.Auth;
 using System.Net.Mail;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 namespace Demo.PL.Controllers
 {
@@ -52,28 +55,77 @@ namespace Demo.PL.Controllers
             }
         }
 
+        public async Task GoogleLogin()
+        {
+            var properties = new AuthenticationProperties
+            {
+                RedirectUri = Url.Action("GoogleResponse")
+            };
+
+            await HttpContext.ChallengeAsync(GoogleDefaults.AuthenticationScheme, properties);
+        }
+
         //[HttpGet("signin-google")]
-        //public async Task<IActionResult> GoogleLogin(string credential)
-        //{
-        //    try
-        //    {
-        //        // Validazione del token restituito da Google
-        //        var payload = await GoogleJsonWebSignature.ValidateAsync(credential);
+        public async Task<IActionResult> GoogleResponse()
+        {
+            var authenticateResult = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
-        //        // Qui puoi usare i dati dell'utente, ad esempio:
-        //        var userEmail = payload.Email;
-        //        var userName = payload.Name;
-        //        var userId = payload.Subject; // ID univoco Google
+            if (!authenticateResult.Succeeded)
+            {
+                return BadRequest(new { Success = false, Message = "Google authentication failed" });
+            }
 
-        //        // Se vuoi registrare l'utente nel database, fallo qui
+            var claimsPrincipal = authenticateResult.Principal;
 
-        //        return Ok(new { Success = true, Email = userEmail, Name = userName });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return BadRequest(new { Success = false, Message = "Errore nella validazione", Error = ex.Message });
-        //    }
-        //}
+            if (claimsPrincipal == null)
+            {
+                return BadRequest(new { Success = false, Message = "Principal is null after authentication" });
+            }
+
+            // Estrarre email e nome utente dai claims di Google
+            var email = claimsPrincipal.FindFirst(ClaimTypes.Email)?.Value;
+            var firstName = claimsPrincipal.FindFirst(ClaimTypes.GivenName)?.Value;
+            var lastName = claimsPrincipal.FindFirst(ClaimTypes.Surname)?.Value;
+
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest(new { Success = false, Message = "Email is missing from Google authentication" });
+            }
+
+            // Verifica se l'utente esiste già nel database
+            var user = await _userManager.FindByEmailAsync(email);
+
+            if (user == null)
+            {
+                // Creiamo un nuovo utente se non esiste
+                user = new ApplicationUser
+                {
+                    UserName = email,
+                    Email = email,
+                    FName = firstName,
+                    LName = lastName,
+                    EmailConfirmed = true // Poiché Google ha già confermato l'email
+                };
+
+                var result = await _userManager.CreateAsync(user);
+
+                if (!result.Succeeded)
+                {
+                    return BadRequest(new { Success = false, Message = "Failed to create user", Errors = result.Errors });
+                }
+
+                // Puoi assegnare un ruolo predefinito, se necessario
+                await _userManager.AddToRoleAsync(user, "User");
+            }
+
+            // Effettua il login con SignInManager
+            await _signinUser.SignInAsync(user, isPersistent: false);
+
+            return RedirectToAction("Index", "Home");
+        }
+
+
+
 
 
         #region Register Get
