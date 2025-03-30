@@ -3,8 +3,8 @@
 @foreach (var role in Model)
 {
     <tr>
-
-        <td>@role.Name</td>
+        <td class="data-label" data-label="Role Name:">@role.Name</td>
         <partial name="_ButtonsPartial" model="@role.Id" />
+
     </tr>
 }

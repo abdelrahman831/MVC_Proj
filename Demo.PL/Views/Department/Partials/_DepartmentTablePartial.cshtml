@@ -1,11 +1,13 @@
 ﻿@model IEnumerable<DepartmentToReturnDto>
-@foreach (var department in Model)
-{
-                    <tr>
-                        <td>@department.Code</td>
-                        <td>@department.Name</td>
-                        <td>@department.CreationDate</td>
-                        <partial name="_ButtonsPartial" model="@department.Id.ToString()" />
-                    </tr>
 
-}
+    @foreach (var department in Model)
+    {
+        <tr>
+            <td class="data-label" data-label="Dept Code">@department.Code</td>
+            <td class="data-label" data-label="Dept Name">@department.Name</td>
+            <td class="data-label" data-label="Dept CodeCreation Date">@department.CreationDate</td>
+            <partial name="_ButtonsPartial" model="@department.Id.ToString()" />
+        </tr>
+
+
+    }

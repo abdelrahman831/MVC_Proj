@@ -3,6 +3,7 @@
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
     ViewData["Title"] = "Employees";
+
     var Departments = new SelectList(await departmentService.GetAllDepartmentsAsync(), nameof(DepartmentToReturnDto.Id), nameof(DepartmentToReturnDto.Name));
 }
 @if (!string.IsNullOrEmpty(TempData["Message"] as string))
@@ -22,7 +23,7 @@
     </div>
 }
 
-@if (TempData["Error"] is List<string> errors && errors.Any())
+@if (!string.IsNullOrEmpty(TempData["Error"] as string))
 {
     <div aria-live="polite" aria-atomic="true" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050;">
         <div class="toast show bg-danger text-white" role="alert" aria-live="assertive" aria-atomic="true">
@@ -32,10 +33,9 @@
             </div>
             <div class="toast-body">
                 <ul class="mb-2">
-                    @foreach (var error in errors)
-                    {
-                        <li>@error</li>
-                    }
+
+                    <li>@TempData["Error"]</li>
+                 
                 </ul>
                 <div class="d-flex justify-content-end">
                     <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="toast">Chiudi</button>
@@ -51,7 +51,9 @@
     <h1 class="w-50 mx-auto text-center fw-bold border-bottom pb-1">All Employees</h1>
 
     <div class="container">
-        <form class="row justify-content-center align-items-center" asp-action="SearchEmployees">
+        <form class="row justify-content-center align-items-center" asp-action="SearchEmployees" onkeydown="if(event.keyCode === 13) {
+               
+                return false;}">
             <div class="col-md-6">
                 <div class="input-group shadow rounded-pill">
                     <input class="form-control border-0 rounded-pill px-3"
@@ -62,6 +64,18 @@
                            style="height: 50px; font-size: 1.1rem;" />
                 </div>
             </div>
+
+            <script>
+                                $(document).ready(function() {
+                  $(window).keydown(function(event){
+                    if(event.keyCode == 13) {
+                        Console.Log("Enter pressed")
+                      event.preventDefault();
+                      return false;
+                    }
+                  });
+                });
+            </script>
         </form>
     </div>
 </div>
@@ -86,6 +100,7 @@
         var toast = new bootstrap.Toast(toastEl, { delay: 5000 }); // Auto-hide after 5 seconds
         toast.show();
     });
+
 </script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 

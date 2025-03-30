@@ -14,11 +14,11 @@ body {
     color: #8c8c8c;
 }
 
-h1, h2, h3, h4, h5, h6,
+/*h1, h2, h3, h4, h5, h6,
 .h1, .h2, .h3, .h4, .h5, .h6 {
     font-family: "Roboto", sans-serif;
     color: #000;
-}
+}*/
 
 a {
     -webkit-transition: .3s all ease;

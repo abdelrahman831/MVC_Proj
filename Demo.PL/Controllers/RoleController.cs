@@ -93,7 +93,9 @@ namespace Demo.PL.Controllers
                 if (roleVm.Id == null || roleVm is null)
                 {
                     ModelState.AddModelError(string.Empty, "Failed to update Role.");
-                    return View(roleVm);
+                    TempData["Error"] = "Failed to update Role";
+                    return RedirectToAction("Index");
+                    
                 }
                 else
                 {
@@ -102,7 +104,9 @@ namespace Demo.PL.Controllers
                     if (role is null)
                     {
                         ModelState.AddModelError(string.Empty, "Failed to update role.");
-                        return View(role);
+
+                        TempData["Error"] = "Failed to update Role";
+                        return RedirectToAction("Index");
                     }
                     else
                     {
@@ -131,20 +135,23 @@ namespace Demo.PL.Controllers
                         {
                             foreach (var error in result.Errors)
                             {
+                                TempData["Error"] = "Failed to update Role";
+                                
                                 ModelState.AddModelError(string.Empty, error.Description);
                             }
-
+                            return RedirectToAction("Index");
                         }
                     }
                 }
 
-                ModelState.AddModelError(string.Empty, "Failed to update roleVm.");
-                return View(roleVm);
+                
             }
             catch (Exception ex)
             {
+                TempData["Error"] = "Failed to update Role";
 
-                return View("Error", "An error occurred while updating the roleVm.");
+                return RedirectToAction("Index");
+
             }
         }
         #endregion
@@ -154,16 +161,23 @@ namespace Demo.PL.Controllers
         [HttpGet]
         public async Task<IActionResult> Details(string? id)
         {
-            if (id is null)
-                return BadRequest();
+            if (id is null) { 
+            TempData["Error"] = "No roles Found";
+            return RedirectToAction("Index"); }
 
             var role = await _userRole.FindByIdAsync(id);
-            var roleVm = new RoleViewModel
+            if (role is not null)
             {
-                Name = role.Name,
-                Id = role.Id
-            };
-            return roleVm == null ? NotFound() : View(roleVm);
+                var roleVm = new RoleViewModel
+                {
+                    Name = role.Name,
+                    Id = role.Id
+                };
+                return roleVm == null ? NotFound() : View(roleVm);
+
+            }
+            TempData["Error"] = "No roles Found";
+            return RedirectToAction("Index");
         }
         #endregion
 
@@ -173,7 +187,10 @@ namespace Demo.PL.Controllers
         public async Task<IActionResult> Delete(string? id)
         {
             if (id is null)
-                return BadRequest();
+            {
+                TempData["Error"] = "No roles FOund to delete";
+                return RedirectToAction("Index");
+            }
 
             var role = await _userRole.FindByIdAsync(id);
             if (role is not null)
@@ -188,7 +205,9 @@ namespace Demo.PL.Controllers
 
 
             }
-            return View("Error", "An error occurred while deleting the roleVm.");
+
+            TempData["Error"] = "No roles FOund to delete";
+            return RedirectToAction("Index");
 
         }
         #endregion
@@ -205,6 +224,7 @@ namespace Demo.PL.Controllers
                 if (role is null)
                 {
                     ModelState.AddModelError(string.Empty, "Failed to delete role.");
+                    TempData["Error"] = "Failed to delete role";
                     return View("Index");
                 }
                 else if (role is not null)

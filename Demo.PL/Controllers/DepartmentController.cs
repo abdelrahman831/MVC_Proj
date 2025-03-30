@@ -4,6 +4,7 @@ using Demo.BLL.DTOS;
 using Demo.BLL.DTOS.Departments;
 using Demo.BLL.Services.DashBoard;
 using Demo.BLL.Services.Departments;
+using Demo.DAL.Entities.Departments;
 using Demo.PL.ViewModels.Department;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -128,7 +129,17 @@ namespace Demo.PL.Controllers
 
             _logger.Information("Fetching details for department ID: {Id}", id);
             var department = await _departmentService.GetDepartmentsByIdAsync(id.Value);
-            return department == null ? NotFound() : View(department);
+
+            if (department == null || department.IsDeleted)
+            {
+                TempData["Error"] = "Error! The department was not found";
+
+                return RedirectToAction("Index");
+            }
+            else
+            {
+                return View(department);
+            }
         }
         #endregion
 
@@ -143,7 +154,19 @@ namespace Demo.PL.Controllers
             {
                 _logger.Information("Fetching department for edit: ID {Id}", id);
                 var department = await _departmentService.GetDepartmentsByIdAsync(id.Value);
-                return department == null ? NotFound() : View(_mapper.Map<DepartmentViewModel>(department));
+                var departmentVm = _mapper.Map<DepartmentViewModel>(department);
+
+
+                if (department == null || department.IsDeleted)
+                {
+                    TempData["Error"] = "Error! The department was not found";
+
+                    return RedirectToAction("Index");
+                }
+                else
+                {
+                    return View(departmentVm);
+                }
             }
             catch (Exception ex)
             {
@@ -166,6 +189,15 @@ namespace Demo.PL.Controllers
 
             try
             {
+                var department = await _departmentService.GetDepartmentsByIdAsync(departmentVM.Id);
+
+                if (department == null || department.IsDeleted)
+                {
+                    TempData["Error"] = "Error! The department was not found";
+
+                    return RedirectToAction("Index");
+                }
+
 
                 var result = await _departmentService.UpdateDepartmentAsync(_mapper.Map<DepartmentToUpdateDto>(departmentVM));
 
@@ -196,14 +228,24 @@ namespace Demo.PL.Controllers
 
         #region Delete GET
         [HttpGet]
-        public IActionResult Delete(int? id)
+        public async Task<IActionResult> Delete(int? id)
         {
             if (!id.HasValue)
                 return BadRequest();
 
             _logger.Information("Fetching department for deletion: ID {Id}", id);
-            var department = _departmentService.GetDepartmentsByIdAsync(id.Value);
-            return department == null ? NotFound() : View(department);
+            var department = await _departmentService.GetDepartmentsByIdAsync(id.Value);
+            
+            if (department == null || department.IsDeleted)
+            {
+                TempData["Error"] = "Error! The department was not found";
+
+                return RedirectToAction("Index");
+            }
+            else
+            {
+                return View(department);
+            }
         }
         #endregion
 
@@ -214,11 +256,17 @@ namespace Demo.PL.Controllers
         {
             try
             {
+                var department = await _departmentService.GetDepartmentsByIdAsync(id);
 
+                if (department == null || department.IsDeleted)
+                {
+                    TempData["Error"] = "Error! The department was not found";
+
+                    return RedirectToAction("Index");
+                }
                 var result = await _departmentService.DeleteDepartmentAsync(id);
                 if (result)
                 {
-                    var department = await _departmentService.GetDepartmentsByIdAsync(id);
                     await _activityService.AddActivity(new DashBoardActivityDto
                     {
                         LogLevel = "DEPDELETEINFO",

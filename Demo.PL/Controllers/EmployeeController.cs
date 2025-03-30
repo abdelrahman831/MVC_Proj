@@ -65,6 +65,24 @@ namespace Demo.PL.Controllers
         }
         #endregion
 
+        #region Search Employees
+        [HttpPost]
+        public async Task<IActionResult> SearchEmployeesPOST(string searchValue)
+        {
+            var employees = await _employeeService.GetAllEmployeesAsync();
+
+            if (!string.IsNullOrWhiteSpace(searchValue))
+            {
+                searchValue = searchValue.ToLower();
+                employees = employees
+                    .Where(e => e.Name.ToLower().Contains(searchValue) || e.Email.ToLower().Contains(searchValue));
+            }
+
+            return PartialView("~/Views/Employee/Partials/_EmployeeTablePartial.cshtml", employees);
+
+        }
+        #endregion
+
 
 
         #region Index
@@ -141,7 +159,18 @@ namespace Demo.PL.Controllers
 
             _logger.Information("Fetching details for employee ID: {Id}", id);
             var employee = await _employeeService.GetEmployeesByIdAsync(id.Value);
-            return employee == null ? NotFound() : View(employee);
+
+
+            if (employee == null || employee.IsDeleted)
+            {
+                TempData["Error"] = "Error! The employee was not found";
+
+                return RedirectToAction("Index");
+            }
+            else
+            {
+                return View(employee);
+            }
         }
         #endregion
 
@@ -158,7 +187,17 @@ namespace Demo.PL.Controllers
                 var employee = await _employeeService.GetEmployeesByIdAsync(id.Value);
                 var employeevm = _mapper.Map<EmployeeViewModel>(employee);
 
-                return employeevm == null ? NotFound() : View(employeevm);
+
+                if (employee == null || employee.IsDeleted)
+                {
+                    TempData["Error"] = "Error! The employee was not found";
+
+                    return RedirectToAction("Index");
+                }
+                else
+                {
+                    return View(employeevm);
+                }
             }
             catch (Exception ex)
             {
@@ -191,6 +230,14 @@ namespace Demo.PL.Controllers
                 }
                 else
                 {
+                    var employee = await _employeeService.GetEmployeesByIdAsync(employeeVM.Id);
+
+                    if (employee == null || employee.IsDeleted)
+                    {
+                        TempData["Error"] = "Error! The employee was not found";
+
+                        return RedirectToAction("Index");
+                    }
                     var result = await _employeeService.UpdateEmployeeAsync(_mapper.Map<EmployeeViewModel, EmployeeToUpdateDto>(employeeVM));
                     if (result > 0)
                     {
@@ -228,7 +275,17 @@ namespace Demo.PL.Controllers
 
             _logger.Information("Fetching employee for deletion: ID {Id}", id);
             var employee = await _employeeService.GetEmployeesByIdAsync(id.Value);
-            return employee == null ? NotFound() : View(employee);
+
+            if (employee == null || employee.IsDeleted)
+            {
+                TempData["Error"] = "Error! The employee was not found";
+                
+                return RedirectToAction("Index");
+            }
+            else
+            {
+                return View(employee);
+            }
         }
         #endregion
 
@@ -240,31 +297,39 @@ namespace Demo.PL.Controllers
             try
             {
                 var employee = await _employeeService.GetEmployeesByIdAsync(id);
-                var result = await _employeeService.DeleteEmployeeAsync(id);
-                if (result)
+                if (employee is not null && !employee.IsDeleted)
                 {
-                    await _activityService.AddActivity(new DashBoardActivityDto
+                    var result = await _employeeService.DeleteEmployeeAsync(id);
+                    if (result)
                     {
-                        LogLevel = "EMPDELETEINFO",
-                        Message = $"Employee deleted successfully: ID {id}",
-                        Status = true,
-                        Exception = employee.Name,
-                        CreatedAt = DateTime.Now
-                    });
-                    TempData["Message"] = "Employee deleted successfully!";
-                    return RedirectToAction("Index");
+                        await _activityService.AddActivity(new DashBoardActivityDto
+                        {
+                            LogLevel = "EMPDELETEINFO",
+                            Message = $"Employee deleted successfully: ID {id}",
+                            Status = true,
+                            Exception = employee.Name,
+                            CreatedAt = DateTime.Now
+                        });
+                        TempData["Message"] = "Employee deleted successfully!";
+                        return RedirectToAction("Index");
+                    }
                 }
+                
 
                 await SaveLogToDb("EMPWarning", "Failed to delete employee", id.ToString());
                 ModelState.AddModelError(string.Empty, "Failed to delete employee.");
-                return View("Index");
+                TempData["Error"] = "Failde to Delete Employee";
+                return RedirectToAction("Index");
             }
             catch (Exception ex)
             {
                 await SaveLogToDb("EMPError", "Error deleting employee", ex.Message);
-                return View("Error", "An error occurred while deleting the employee.");
+                TempData["Error"] = "Failde to Delete Employee";
+
+                return RedirectToAction("Index");
+
             }
         } 
         #endregion
-    }
+    }   
 }
