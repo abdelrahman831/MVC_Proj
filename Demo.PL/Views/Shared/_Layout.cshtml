@@ -10,20 +10,14 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title> @ViewData["Title"]-MVC Project</title>
-
+    <link href="~/css/table.css" rel="stylesheet" />
     <!-- Bootstrap & Styles -->
     <link href="~/css/output.css" rel="stylesheet" />
     <link href="~/css/input.css" rel="stylesheet" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" /> 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
-    integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
-    crossorigin="anonymous" referrerpolicy="no-referrer" />
-
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <style>
@@ -47,20 +41,6 @@
         position: relative;
         transition: background-color 0.3s ease;
         }
-        /* Contenitore della tabella */
-        .table-container {
-            background: white;
-            padding: 15px;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        /* Hover sulle righe */
-        .table tbody tr:hover {
-            background: #f8f9fa !important;
-            transition: background 0.2s ease-in-out;
-        }
-
         /* Immagini arrotondate migliorate */
         .employee-img {
             width: 45px;
@@ -124,10 +104,6 @@
         ::-webkit-scrollbar {
             width: 0; /* Remove scrollbar space */
             background: transparent; /* Optional: just make scrollbar invisible */
-        }
-        /* Optional: show position indicator in red */
-        ::-webkit-scrollbar-thumb {
-            background: #FF0000;
         }
         .navbar-brand {
         font-size: 1.75rem;
@@ -204,22 +180,7 @@
         padding: 10px;
         } */
 
-        .footer {
-        background-color: #ccc;
-        text-align: center;
-        padding: 10px;
-        }
 
-        .footer a {
-        color: #ffc107;
-        text-decoration: none;
-        transition: color 0.3s ease;
-        }
-
-        .footer a:hover {
-        color: #fff;
-        text-decoration: underline;
-        }
 
 /*         
         .container {

@@ -8,56 +8,66 @@
 @foreach (var employee in Model)
 {
     <tr>
-        <td>
-            <div class="d-flex align-items-center">
-                <img src="~/Files/Images/@(employee.ImagePath ?? "NotFound.png")"
-                     class="rounded-circle employee-img" />
-                <div class="ms-3 text-start">
-                    <p class="fw-bold mb-0">@employee.Name</p>
-                    <p class="text-muted small mb-0">@employee.Email</p>
+        <td class="data-label">
+            <div class="d-flex">
+                <img src="~/Files/Images/@(employee.ImagePath ?? "NotFound.png")" class="rounded-circle" style="width: 45px; height: 45px" />
+
+                <div class="ms-3">
+                    <p class="fw-bold mb-1">@employee.Name</p>
+                    <p class="text-muted mb-0">@employee.Email</p>
                 </div>
             </div>
         </td>
 
-        <td>
-            <p class="fw-normal mb-1">@employee.EmployeeType</p>
+        <td class="data-label" data-label="Job Type">
+
+
+
+
+
             @if (employee.DepartmentId is null || Departments.FirstOrDefault(d => d.Value == employee.DepartmentId.ToString()) is null)
             {
-                <p class="text-muted small mb-0">No Department</p>
+                <p class="fw-normal mb-1">@employee.EmployeeType</p>
+
+                <p class="text-muted mb-0">No Department</p>
             }
             else
             {
-                <a asp-controller="Department" asp-action="Details" asp-route-id="@employee.DepartmentId.ToString()" class="text-primary fw-bold small">
+                <p class="fw-normal mb-1">@employee.EmployeeType</p>
+                <a asp-controller="Department" asp-action="Details" asp-route-id="@employee.DepartmentId.ToString()" class="text-primary fw-bold">
                     @(Departments.FirstOrDefault(d => d.Value == employee.DepartmentId.ToString()).Text)
                 </a>
             }
+
+        </td>
+        <td class="data-label" data-label="Age">
+            @employee.Age
+        </td>
+        <td class="data-label" data-label="Salary">
+            @employee.Salary
         </td>
 
-        <td>@employee.Age</td>
-        <td>$@employee.Salary.ToString("N2")</td>
+        <td class="data-label" data-label="Privacy Agreement">
 
-        <td>
             <span class="badge @(employee.IsActive ? "bg-success" : "bg-danger")">
                 @(employee.IsActive ? "Yes" : "No")
             </span>
         </td>
-        
-
-        <td class="text-center">
-                @if (employee.Gender?.ToLower() == "male")
-                {
+        <td class="text-center data-label" data-label="Gender">
+            @if (employee.Gender?.ToLower() == "male")
+            {
                 <i class="fa-solid fa-mars text-primary" title="Male"></i>
-                }
-                else
-                {
+            }
+            else
+            {
                 <i class="fa-solid fa-venus text-danger" title="Female"></i>
-                }
+            }
 
         </td>
 
-        
-
+        @*  <td> @Html.PartialAsync("_ButtonsPartial", employee.Id.ToString())  </td> *@
         <partial name="_ButtonsPartial" model="@employee.Id.ToString()" />
+
 
     </tr>
 }
