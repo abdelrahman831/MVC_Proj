@@ -22,6 +22,7 @@ using System.Net.Mail;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Google.Apis.Drive.v3.Data;
 
 namespace Demo.PL.Controllers
 {
@@ -84,8 +85,8 @@ namespace Demo.PL.Controllers
 
             // Estrarre email e nome utente dai claims di Google
             var email = claimsPrincipal.FindFirst(ClaimTypes.Email)?.Value;
-            var firstName = claimsPrincipal.FindFirst(ClaimTypes.GivenName)?.Value;
-            var lastName = claimsPrincipal.FindFirst(ClaimTypes.Surname)?.Value;
+            var firstName = claimsPrincipal.FindFirst(ClaimTypes.GivenName)?.Value??"unknown";
+            var lastName = claimsPrincipal.FindFirst(ClaimTypes.Surname)?.Value ?? "unknown";
 
             if (string.IsNullOrEmpty(email))
             {
@@ -126,7 +127,28 @@ namespace Demo.PL.Controllers
 
 
 
+        public async Task<IActionResult> ConfirmEmail(string email, string otpCode)
+        {
+            var Cachedotp = TempData["Otp"] as string;
+            var Cachedemail = TempData["Email"] as string;
 
+            if(Cachedemail is not null && Cachedotp is not null && otpCode is not null && email is not null && email == Cachedemail && otpCode == Cachedotp)
+            {
+                var user = await _userManager.FindByEmailAsync(email);
+                if(user is not null && !await _userManager.IsEmailConfirmedAsync(user))
+                {
+                    await _userManager.ConfirmEmailAsync(user, otpCode);
+                    TempData["Message"] = "Email COnfirmed! You can now login";
+                    return RedirectToAction("Login", "Account");
+                }
+                TempData["Error"] = "An Error Occurred Please try again";
+
+                return RedirectToAction("Login", "Account");
+            }
+            TempData["Error"] = "An Error Occurred Please try again";
+            return RedirectToAction("Login", "Account");
+
+        }
 
         #region Register Get
         [HttpGet]
@@ -506,12 +528,12 @@ namespace Demo.PL.Controllers
                         {
                             await SaveLogToDb("LOGIN", "Email not confirmed", user.Email);
                             ModelState.AddModelError(string.Empty, "Email not confirmed");
-                            TempData["Message"] = "EmailNotConfirmed";
-
-                        
-
+                            TempData["Error"] = "EmailNotConfirmed, We have sent you an email, please click the link in mail to verify your email";
                             var otpCode = await _userManager.GenerateEmailConfirmationTokenAsync(user);
 
+                            var url = Url.Action("ConfirmEmail", "Account", new { email = user.Email, otpCode }, Request.Scheme);
+
+                            TempData["Error"] = "Email is not confirmed, click the link we sent you in email.";
                             var mailMessage = new MailMessage
                             {
                                 Subject = "📧 Registration Confirmation - Verify Your Email",
@@ -523,11 +545,8 @@ namespace Demo.PL.Controllers
                 Hi <strong>{user.FName} {user.LName}</strong>, <br>
                 Thank you for registering! To complete your registration, please verify your email by entering the following OTP code in the confirmation form:
             </p>
-            <div style='text-align: center; font-size: 20px; font-weight: bold; padding: 10px; border-radius: 5px; background-color: #f0f0f0; display: inline-block;'>
-                {otpCode}
-            </div>
             <div style='text-align: center; margin-top: 20px;'>
-                <a href='https://mvcproj.bsite.net/Account/ConfirmRegister' style='text-decoration: none; background-color: #007bff; color: white; padding: 10px 20px; border-radius: 5px; display: inline-block; font-size: 16px;'>
+                <a href='{url}' style='text-decoration: none; background-color: #007bff; color: white; padding: 10px 20px; border-radius: 5px; display: inline-block; font-size: 16px;'>
                     🔑 Confirm Email
                 </a>
             </div>
@@ -542,8 +561,9 @@ namespace Demo.PL.Controllers
                             _emailService.SendHtmlEmail(mailMessage);
 
                             TempData["Email"] = user.Email;
+                            TempData["Otp"] = otpCode;
 
-                            return RedirectToAction("ConfirmRegister");
+                            return View();
                         }
 
                         var check = await _userManager.CheckPasswordAsync(user, loginViewModel.Password);
@@ -671,10 +691,16 @@ namespace Demo.PL.Controllers
                             await _roleManager.CreateAsync(new IdentityRole("User"));
                         }
                         await _userManager.AddToRoleAsync(newUser, "User");
-                        TempData["Message"] = "User created successfully!";
+
 
                         //Send Registration email
-                        var confirmationCode = await _userManager.GenerateEmailConfirmationTokenAsync(newUser);
+
+                        var otpCode = await _userManager.GenerateEmailConfirmationTokenAsync(newUser);
+                        TempData["Message"] = "User Created, We have sent you an email, please click the link in mail to verify your email";
+                        
+
+                        var url = Url.Action("ConfirmEmail", "Account", new { email = newUser.Email, otpCode }, Request.Scheme);
+
                         var email = new MailMessage
                         {
                             Subject = "✨ Registration Confirmation",
@@ -686,9 +712,11 @@ namespace Demo.PL.Controllers
                 You have successfully registered on our platform. To verify your email, please use the code below:
             </p>
             <div style='text-align: center; margin: 20px 0;'>
-                <span style='font-size: 22px; font-weight: bold; color: #007bff; background: #e7f3ff; padding: 10px 20px; border-radius: 5px; display: inline-block;'>
-                    {confirmationCode}
-                </span>
+               <div style='text-align: center; margin-top: 20px;'>
+                <a href='{url}' style='text-decoration: none; background-color: #007bff; color: white; padding: 10px 20px; border-radius: 5px; display: inline-block; font-size: 16px;'>
+                    🔑 Confirm Email
+                </a>
+            </div>
             </div>
             <p style='color: #888; text-align: center; font-size: 14px;'>
                 Enter this code in the OTP form to confirm your email.
@@ -707,8 +735,9 @@ namespace Demo.PL.Controllers
 
 
                         TempData["Email"] = registerViewModel.Email;
+                        TempData["Otp"] = otpCode;
 
-                        return RedirectToAction("ConfirmRegister");
+                        return RedirectToAction("Login");
                     }
                     else
                     {
