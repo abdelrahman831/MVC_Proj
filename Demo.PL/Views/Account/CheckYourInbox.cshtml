@@ -1,0 +1,27 @@
+﻿
+@{
+    Layout = "_AuthLayout";
+    ViewData["Title"] = "Email Sent!";
+
+}
+
+<div class="card-front">
+    <div class="center-wrap">
+        <div class="section text-center">
+            <h5 class="mb-4 pb-3">Check Your Inbox</h5>
+            <h2> We have sent you an email</h2>
+            <p>Check your inbox and follow the instructions to reset your password</p>
+            <p>Please Note that the reset url will expire after 1h</p>
+
+            <br />
+            <p>Didn't receive the email? --> check you SPAM</p> 
+            <p>Still didn't receive anithing? -->the email you put is not registered in our Database, try to <a asp-action="Register">signUp</a></p>
+        </div>
+    </div>
+</div>
+
+
+
+@section ValidationScripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -18,50 +18,49 @@ namespace Demo.DAL.Presistance.Repositories.Generic
         {
             _dbContext = dbContext;
         }
-        public IEnumerable<T> GetAll(bool AsNoTracking = true)
+        public async Task<IEnumerable<T>> GetAllAsync(bool AsNoTracking = true)
         {
             //IsDeleted ==>false
             if (AsNoTracking)
             {
-                return _dbContext.Set<T>().Where(X=>!X.IsDeleted).AsNoTracking().ToList();  //Ditached
+                return  await _dbContext.Set<T>().Where(X=>!X.IsDeleted).AsNoTracking().ToListAsync();  //Ditached
             }
-            return _dbContext.Set<T>().Where(X => !X.IsDeleted).ToList();
+            return await _dbContext.Set<T>().Where(X => !X.IsDeleted).ToListAsync();
             //UnChanged
         }
 
-        public T? GetById(int Id)
+        public async Task<T?> GetByIdAsync(int Id)
         {
             //   return _dbContext.Ts.Local.FirstOrDefault(D => D.Id == Id); Old
-            return _dbContext.Set<T>().Find(Id);  //Search localy in case "Found" ==>Return - In Case "NotFound" ==>will send to database to get it
+            return await _dbContext.Set<T>().FindAsync(Id);  //Search localy in case "Found" ==>Return - In Case "NotFound" ==>will send to database to get it
         }
-        public int AddT(T entity)
+        public void AddTAsync(T entity)
         {
             _dbContext.Set<T>().Add(entity);  //Saved localy
-            return _dbContext.SaveChanges();       //Apply localy
 
         }
-        public int UpdateT(T entity)
+        public void UpdateTAsync(T entity)
         {
             _dbContext.Set<T>().Update(entity);  //Modified
-            return _dbContext.SaveChanges(); //unchanged
+//unchanged
         }
-        public int DeleteT(T entity)
+        public void DeleteTAsync(T entity)
         {
             //_dbContext.Set<T>().Remove(entity);  //Modified
             //return _dbContext.SaveChanges(); //unchanged
             entity.IsDeleted = true;
             _dbContext.Set<T>().Update(entity);
-            return _dbContext.SaveChanges();
+
         }
 
-        public IQueryable<T> GetAllQuarable()
+        public IQueryable<T> GetAllQuarableAsync()
         {
-            return _dbContext.Set<T>();
+            return  _dbContext.Set<T>();
         }
 
-        public IEnumerable<T> GetAllEnumerble()
+        public async Task<IEnumerable<T>> GetAllEnumerableAsync()
         {
-            return _dbContext.Set<T>();
+            return await _dbContext.Set<T>().ToListAsync();
         }
     }
 }

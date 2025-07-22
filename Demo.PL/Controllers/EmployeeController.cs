@@ -1,290 +1,335 @@
 ﻿using AutoMapper;
+using Dapper;
+using Demo.BLL.DTOS;
 using Demo.BLL.DTOS.Employees;
+using Demo.BLL.Services.DashBoard;
 using Demo.BLL.Services.Departments;
 using Demo.BLL.Services.Employees;
-using Demo.DAL.Entities.Common.Enums;
 using Demo.DAL.Entities.Employees;
 using Demo.PL.ViewModels.Employee;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.CodeDom;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 namespace Demo.PL.Controllers
 {
+    [Authorize]
+
     public class EmployeeController : Controller
     {
-        //Action ==> Master Action
-        #region  Service //DependancyInjection
         private readonly IEmployeeService _employeeService;
         private readonly IMapper _mapper;
-        private readonly ILogger<EmployeeController> _logger;
+        private readonly Serilog.ILogger _logger;
         private readonly IWebHostEnvironment _environment;
+        private readonly IActivityService _activityService;
+        private readonly IDepartmentService _departmentService;
 
-        public EmployeeController(IEmployeeService employeeService,IMapper mapper, ILogger<EmployeeController> logger, IWebHostEnvironment environment)
+        public EmployeeController(IDepartmentService departmentService,IActivityService activityService, IEmployeeService employeeService, IMapper mapper, IWebHostEnvironment environment)
         {
             _employeeService = employeeService;
             _mapper = mapper;
-            _logger = logger;
+            _logger = Log.ForContext<EmployeeController>();
             _environment = environment;
+            _activityService = activityService;
+            _departmentService = departmentService;
+        }
+
+        private async Task SaveLogToDb(string level, string message, string exception = null)
+        {
+            using (var connection = new SqlConnection("Server=sql.bsite.net\\MSSQL2016;Database=mvcproj_mvcproj_;User Id=mvcproj_mvcproj_;Password=mvcproj;TrustServerCertificate=True;MultipleActiveResultSets=true"))
+            {
+                var query = "INSERT INTO Logs (LogLevel, Message, Exception) VALUES (@LogLevel, @Message, @Exception)";
+                await connection.ExecuteAsync(query, new { LogLevel = level, Message = message, Exception = exception });
+            }
+        }
+
+
+        #region Search Employees
+        [HttpGet]
+        public async Task<IActionResult> SearchEmployees(string searchValue)
+        {
+            var employees = await _employeeService.GetAllEmployeesAsync();
+
+            if (!string.IsNullOrWhiteSpace(searchValue))
+            {
+                searchValue = searchValue.ToLower();
+                employees = employees
+                    .Where(e => e.Name.ToLower().Contains(searchValue) || e.Email.ToLower().Contains(searchValue));
+            }
+
+            return PartialView("~/Views/Employee/Partials/_EmployeeTablePartial.cshtml", employees);
+
         }
         #endregion
+
+        #region Search Employees
+        [HttpPost]
+        public async Task<IActionResult> SearchEmployeesPOST(string searchValue)
+        {
+            var employees = await _employeeService.GetAllEmployeesAsync();
+
+            if (!string.IsNullOrWhiteSpace(searchValue))
+            {
+                searchValue = searchValue.ToLower();
+                employees = employees
+                    .Where(e => e.Name.ToLower().Contains(searchValue) || e.Email.ToLower().Contains(searchValue));
+            }
+
+            return PartialView("~/Views/Employee/Partials/_EmployeeTablePartial.cshtml", employees);
+
+        }
+        #endregion
+
+
 
         #region Index
-        [HttpGet] //As Default
-        public IActionResult Index()
+        [HttpGet]
+        public async Task<IActionResult> Index()
         {
-            var employees = _employeeService.GetAllEmployees();
+            _logger.Information("Fetching all employees");
+            var employees = await _employeeService.GetAllEmployeesAsync();
             return View(employees);
-        } 
+        }
         #endregion
 
-        #region Create
+        #region Create GET
         [HttpGet]
-        //show the form
-        public IActionResult Create( )
+        public async Task<IActionResult> Create()
         {
-            //Send Department from action
-        //    ViewData["Departments"] = departmentService.GetAllDepartments();
-            return View();
+
+            var departments = await _departmentService.GetAllDepartmentsAsync();
+            ViewData["Departments"] = new SelectList(departments, "Id", "Name");
+            return View(new EmployeeViewModel());
         }
+        #endregion
+
+        #region Create POST
         [HttpPost]
-        [ValidateAntiForgeryToken] //Action Filter
-        public IActionResult Create(EmployeeViewModel employeeVM)
-        {
-            if (!ModelState.IsValid)
-
-                return View(employeeVM);
-            var message = string.Empty;
-            try
-            {
-                //Log.Information("DTO ricevuto: {@Dto}", employeeVM);
-
-                var result = _mapper.Map<EmployeeToCreateDto>(employeeVM);
-
-                //Log.Information("Entità mappata: {@Employee}", result);
-                var Result = _employeeService.CreateEmployee(result);
-
-
-                //var Result = _employeeService.CreateEmployee(new EmployeeToCreateDto(){
-                //    Name = employeeVM.Name,
-                //    Age = employeeVM.Age,
-                //    Address = employeeVM.Address,
-                //    Salary = employeeVM.Salary,
-                //    PhoneNumber = employeeVM.PhoneNumber,
-                //    IsActive = employeeVM.IsActive,
-                //    Email = employeeVM.Email,
-                //    HiringDate = employeeVM.HiringDate,
-                //    Gender = employeeVM.Gender,
-                //    EmployeeType = employeeVM.EmployeeType,
-                //    DepartmentId = employeeVM.DepartmentId
-                //});
-
-
-                if (Result > 0)
-                {
-                    TempData["Message"] = "Congratolations! , Employee is created";
-
-                    return RedirectToAction("Index");
-                }
-                else
-                {
-                    message = "Employee is not created";
-                    TempData["Message"] = message;
-                    ModelState.AddModelError(string.Empty, message);
-                    return View(employeeVM);
-                }
-
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, ex.Message);
-                if (_environment.IsDevelopment())
-                {
-                    message = ex.Message;
-                    return View();
-                }
-                else
-                {
-                    message = "An error occurred while creating the Employee";
-                    return View("Error", message);
-
-
-                }
-
-            }
-        }
-        #endregion
-
-        #region Details
-        [HttpGet]
-        public IActionResult Details(int? id)
-        {
-            if (id is null)
-            {
-                return BadRequest();
-            }
-            var employee = _employeeService.GetEmployeesById(id.Value);
-            if (employee is null)
-            {
-                return NotFound();
-            }
-            return View(employee);
-
-        }
-        #endregion
-
-        #region Update
-        [HttpGet]
-        public IActionResult Edit(int? id)
-        {
-            if (id is null)
-            {
-                return BadRequest();
-            }
-            var employee = _employeeService.GetEmployeesById(id.Value);
-            if (employee is null)
-            {
-                return NotFound();
-            }
-            return View(new EmployeeViewModel()
-            {
-             
-                EmployeeType = Enum.TryParse<EmployeeType>(employee.EmployeeType, out var empType) ? empType : default,
-                Gender = Enum.TryParse<Gender>(employee.Gender, out var gender) ? gender : default,
-                Name = employee.Name,
-                Address = employee.Address,
-                Email = employee.Email,
-                Age = employee.Age,
-                IsActive = employee.IsActive,
-                PhoneNumber = employee.PhoneNumber,
-                HiringDate = employee.HiringDate,
-                Salary = employee.Salary,
-                DepartmentId=employee.DepartmentId
-               
-            
-            });
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken] //Action Filter
-
-        public IActionResult Edit(int id, EmployeeViewModel employeeVM)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(EmployeeViewModel employeeVM)
         {
             if (!ModelState.IsValid)
             {
-
+                await SaveLogToDb("EMPWarning", "Failed to create employee", employeeVM.ToString());
                 return View(employeeVM);
             }
-            var message = string.Empty;
+
             try
             {
-                var Result = _employeeService.UpdateEmployee(new EmployeeToUpdateDto()
-                {
-                    Id = id,
-                    Name = employeeVM.Name,
-                    Age = employeeVM.Age,
-                    Address = employeeVM.Address,
-                    Salary = employeeVM.Salary,
-                    PhoneNumber = employeeVM.PhoneNumber,
-                    IsActive = employeeVM.IsActive,
-                    Email = employeeVM.Email,
-                    HiringDate = employeeVM.HiringDate,
-                    Gender = employeeVM.Gender,
-                    EmployeeType = employeeVM.EmployeeType,
-                    DepartmentId = employeeVM.DepartmentId
 
-                });
-                if (Result > 0)
+                var employeeDto = _mapper.Map<EmployeeToCreateDto>(employeeVM);
+                var result = await _employeeService.CreateEmployeeAsync(employeeDto);
+
+                if (result > 0)
                 {
-                    TempData["Message"] = "Congratolations! , Employee is Updated";
+                    await _activityService.AddActivity(new DashBoardActivityDto
+                    {
+                        LogLevel = "EMPCREATEINFO",
+                        Message = $"Employee created successfully: {employeeVM.Name}",
+                        Status = true,
+                        Exception = employeeVM.Name,
+                        CreatedAt = DateTime.Now
+                    });
+
+                    TempData["Message"] = "Employee created successfully!";
+                    return RedirectToAction("Index");
+                }
+
+                await SaveLogToDb("EMPWarning", "Failed to create employee", employeeVM.ToString());
+                ModelState.AddModelError(string.Empty, "Failed to create employee.");
+                return View(employeeVM);
+            }
+            catch (Exception ex)
+            {
+                await SaveLogToDb("EMPError", "Error creating employee", ex.Message);
+                return View("Error", "An error occurred while creating the employee.");
+            }
+        }
+        #endregion
+
+        #region Details GET
+        [HttpGet]
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (!id.HasValue)
+                return BadRequest();
+
+            _logger.Information("Fetching details for employee ID: {Id}", id);
+            var employee = await _employeeService.GetEmployeesByIdAsync(id.Value);
+
+
+            if (employee == null || employee.IsDeleted)
+            {
+                TempData["Error"] = "Error! The employee was not found";
+
+                return RedirectToAction("Index");
+            }
+            else
+            {
+                return View(employee);
+            }
+        }
+        #endregion
+
+        #region Edit GET
+        [HttpGet]
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (!id.HasValue)
+                return BadRequest();
+
+            try
+            {
+
+                var employee = await _employeeService.GetEmployeesByIdAsync(id.Value);
+                var employeevm = _mapper.Map<EmployeeViewModel>(employee);
+
+
+                if (employee == null || employee.IsDeleted)
+                {
+                    TempData["Error"] = "Error! The employee was not found";
 
                     return RedirectToAction("Index");
                 }
                 else
                 {
-                    message = "Employee is not updated Ya Man !";
-                    TempData["Message"] = message;
-                    ModelState.AddModelError(string.Empty, message);
-                    return View(employeeVM);
+                    return View(employeevm);
                 }
-
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, ex.Message);
-                if (_environment.IsDevelopment())
-                {
-                    message = ex.Message;
-                    return View(employeeVM);
-                }
-                else
-                {
-                    message = "An error occurred while updating the Employee";
-                    return View("Error", message);
-
-                }
-
+                _logger.Error(ex, "Error fetching employee for edit: ID {Id}", id);
+                return RedirectToAction("Index");
             }
 
         }
         #endregion
 
-        #region Delete
-        [HttpGet]    //Way01 Delete
-        public IActionResult Delete(int? id)
-        {
-            var employee = _employeeService.GetEmployeesById(id.Value);
-            if (employee is null)
-            {
-                return NotFound();
-            }
-            return View(employee);
-        }
-
+        #region Edit POST
         [HttpPost]
-        [ValidateAntiForgeryToken] //Action Filter
-
-        public IActionResult Delete(int id)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(EmployeeViewModel employeeVM)
         {
-            var message = string.Empty;
+            var id = employeeVM.Id;
+            if (!ModelState.IsValid)
+            {
+                await SaveLogToDb("EMPWarning", "Failed to update employee", employeeVM.ToString());
+                return View(employeeVM);
+            }
+
             try
             {
-                var Result = _employeeService.DeleteEmployee(id);
-
-                if (Result == true)
+                if (employeeVM.Id == 0 && employeeVM is null)
                 {
-                    TempData["Message"] = "Sure!, Employee is Deleted";
-
-                    return RedirectToAction("Index");
+                    await SaveLogToDb("EMPEDITWarning", "Failed to update employee", employeeVM.ToString());
+                    ModelState.AddModelError(string.Empty, "Failed to update employee.");
+                    return View(employeeVM);
                 }
                 else
                 {
-                    message = "Employee is not deleted Ya Man!";
-                    TempData["Message"] = message;
+                    var employee = await _employeeService.GetEmployeesByIdAsync(employeeVM.Id);
 
-                    ModelState.AddModelError(string.Empty, message);
-                    return View("Index");
+                    if (employee == null || employee.IsDeleted)
+                    {
+                        TempData["Error"] = "Error! The employee was not found";
+
+                        return RedirectToAction("Index");
+                    }
+                    var result = await _employeeService.UpdateEmployeeAsync(_mapper.Map<EmployeeViewModel, EmployeeToUpdateDto>(employeeVM));
+                    if (result > 0)
+                    {
+                        await _activityService.AddActivity(new DashBoardActivityDto
+                        {
+                            LogLevel = "EMPEDITINFO",
+                            Message = $"Employee updated successfully: {employeeVM.Name}",
+                            Status = true,
+                            Exception = employeeVM.Name,
+                            CreatedAt = DateTime.Now
+                        });
+                        TempData["Message"] = "Employee updated successfully!";
+                        return RedirectToAction("Index");
+                    }
                 }
 
+                await SaveLogToDb("EMPWarning", "Failed to update employee", employeeVM.ToString());
+                ModelState.AddModelError(string.Empty, "Failed to update employee.");
+                return View(employeeVM);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, ex.Message);
-                if (_environment.IsDevelopment())
-                {
-                    message = ex.Message;
-                    return View();
-                }
-                else
-                {
-                    message = "An error occurred while deleting the Employee";
-                    return View("Error", message);
+                await SaveLogToDb("EMPError", "Error updating employee", ex.Message);
+                return View("Error", "An error occurred while updating the employee.");
+            }
+        }
+        #endregion
 
+        #region Delete GET
+        [HttpGet]
+        public async Task<IActionResult> Delete(int? id)
+        {
+            if (!id.HasValue)
+                return BadRequest();
+
+            _logger.Information("Fetching employee for deletion: ID {Id}", id);
+            var employee = await _employeeService.GetEmployeesByIdAsync(id.Value);
+
+            if (employee == null || employee.IsDeleted)
+            {
+                TempData["Error"] = "Error! The employee was not found";
+                
+                return RedirectToAction("Index");
+            }
+            else
+            {
+                return View(employee);
+            }
+        }
+        #endregion
+
+        #region Delete POST
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
+        {
+            try
+            {
+                var employee = await _employeeService.GetEmployeesByIdAsync(id);
+                if (employee is not null && !employee.IsDeleted)
+                {
+                    var result = await _employeeService.DeleteEmployeeAsync(id);
+                    if (result)
+                    {
+                        await _activityService.AddActivity(new DashBoardActivityDto
+                        {
+                            LogLevel = "EMPDELETEINFO",
+                            Message = $"Employee deleted successfully: ID {id}",
+                            Status = true,
+                            Exception = employee.Name,
+                            CreatedAt = DateTime.Now
+                        });
+                        TempData["Message"] = "Employee deleted successfully!";
+                        return RedirectToAction("Index");
+                    }
                 }
+                
+
+                await SaveLogToDb("EMPWarning", "Failed to delete employee", id.ToString());
+                ModelState.AddModelError(string.Empty, "Failed to delete employee.");
+                TempData["Error"] = "Failde to Delete Employee";
+                return RedirectToAction("Index");
+            }
+            catch (Exception ex)
+            {
+                await SaveLogToDb("EMPError", "Error deleting employee", ex.Message);
+                TempData["Error"] = "Failde to Delete Employee";
+
+                return RedirectToAction("Index");
 
             }
-
         } 
         #endregion
-    }
+    }   
 }

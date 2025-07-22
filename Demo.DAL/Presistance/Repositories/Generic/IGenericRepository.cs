@@ -9,14 +9,14 @@ namespace Demo.DAL.Presistance.Repositories.Generic
 {
     public interface IGenericRepository<T> where T : ModelBase
     {
-        IEnumerable<T> GetAll(bool AsNoTracking = true);
-        IQueryable<T> GetAllQuarable();
-        IEnumerable<T> GetAllEnumerble();
+        Task<IEnumerable<T>> GetAllAsync(bool AsNoTracking = true);
+        IQueryable<T> GetAllQuarableAsync();
+        Task<IEnumerable<T>> GetAllEnumerableAsync();
 
-        T? GetById(int Id);
-        int AddT(T entity);
-        int UpdateT(T entity);
-        int DeleteT(T entity);
+        Task<T?> GetByIdAsync(int Id);
+        void AddTAsync(T entity);
+        void UpdateTAsync(T entity);
+        void DeleteTAsync(T entity);
 
     }
 }

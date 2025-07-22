@@ -1,269 +1,292 @@
-﻿using Demo.BLL.DTOS.Departments;
+﻿using AutoMapper;
+using Dapper;
+using Demo.BLL.DTOS;
+using Demo.BLL.DTOS.Departments;
+using Demo.BLL.Services.DashBoard;
 using Demo.BLL.Services.Departments;
+using Demo.DAL.Entities.Departments;
 using Demo.PL.ViewModels.Department;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.Data.SqlClient;
+using Serilog;
 
 namespace Demo.PL.Controllers
 {
+    [Authorize]
+
     public class DepartmentController : Controller
     {
-        //Action ==> Master Action
-
-        //ViewStorage ==> ViewData , ViewBag ==>Deal with the same storage
-        //Dictionary
-        //Extra data
-
-        // 1] Send data from action in controller to view
-        // 2] Send data from view to partial view
-        // 3] Send data from view to layout
-
-        //View data ==> .net 3.5
-        //ViewBag ==> .net 4.0
-        //Tempdata ==> Send data from request to another request ==> From Action to another Action
-
-        #region Service //DependancyInjection 
         private readonly IDepartmentService _departmentService;
-        private readonly ILogger<DepartmentController> _logger;
+        private readonly IMapper _mapper;
+        private readonly Serilog.ILogger _logger;
         private readonly IWebHostEnvironment _environment;
+        private readonly IActivityService _activityService;
 
-        public DepartmentController(IDepartmentService departmentService, ILogger<DepartmentController> logger, IWebHostEnvironment environment)
+
+        public DepartmentController(IActivityService activityService, IDepartmentService departmentService, IMapper mapper, IWebHostEnvironment environment)
         {
             _departmentService = departmentService;
-            _logger = logger;
+            _mapper = mapper;
+            _logger = Log.ForContext<DepartmentController>();
             _environment = environment;
+            _activityService = activityService;
         }
-        #endregion
 
-        #region Index
-     
-        
-        [HttpGet] //As Default
-        public IActionResult Index()
+        private async Task SaveLogToDb(string level, string message, string exception = null)
         {
-        //ViewData["Message"] = "Hello in Departments From View Data!";
-        //ViewBag.Message= "Hello in Departments From View Bag!";
+            using (var connection = new SqlConnection("Server=sql.bsite.net\\MSSQL2016;Database=mvcproj_mvcproj_;User Id=mvcproj_mvcproj_;Password=mvcproj;TrustServerCertificate=True;MultipleActiveResultSets=true"))
+            {
+                var query = "INSERT INTO Logs (LogLevel, Message, Exception) VALUES (@LogLevel, @Message, @Exception)";
+                await connection.ExecuteAsync(query, new { LogLevel = level, Message = message, Exception = exception });
+            }
+        }
 
-            var departments = _departmentService.GetAllDepartments();
-            return View(departments);
+
+        #region Search Department
+        [HttpGet]
+        public async Task<IActionResult> SearchDepartments(string searchValue)
+        {
+            var department = await _departmentService.GetAllDepartmentsAsync();
+
+            if (!string.IsNullOrWhiteSpace(searchValue))
+            {
+                searchValue = searchValue.ToLower();
+                department = department
+                    .Where(e => e.Name.ToLower().Contains(searchValue) || e.Code.ToLower().Contains(searchValue));
+            }
+
+            return PartialView("~/Views/Department/Partials/_DepartmentTablePartial.cshtml", department);
+
         } 
         #endregion
 
-        #region Create
+        #region Index
         [HttpGet]
-        //show the form
-        public IActionResult Create()
+        public async Task<IActionResult> Index()
         {
-            return View();
+            _logger.Information("Fetching all departments");
+            var departments = await _departmentService.GetAllDepartmentsAsync();
+            return View(departments);
         }
+        #endregion
+
+        #region Create GET
+        [HttpGet]
+        public IActionResult Create() => View();
+        #endregion
+
+        #region Create POST
         [HttpPost]
-        [ValidateAntiForgeryToken] //Action Filter
-
-        public IActionResult Create(DepartmentViewModel departmentVM)  //new
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(DepartmentViewModel departmentVM)
         {
-            if (!ModelState.IsValid)
 
+            if (!ModelState.IsValid)
+            {
+                await SaveLogToDb("DEPWarning", "Invalid model state for creating DepartmentViewModel: {@DepartmentVM}", departmentVM.ToString());
                 return View(departmentVM);
-            var message = string.Empty;
+            }
+
             try
             {
-                var Result = _departmentService.CreateDepartment(new DepartmentToCreateDto()  //new
-                {
-                    Code = departmentVM.Code,
-                    CreationDate = departmentVM.CreationDate,
-                    Description = departmentVM.Description,
-                    Name = departmentVM.Name
 
-                });
-                if (Result > 0) 
+                var result = await _departmentService.CreateDepartmentAsync(_mapper.Map<DepartmentToCreateDto>(departmentVM));
+
+                if (result > 0)
                 {
-                    TempData["Message"] = "Congratolations! , Department is created";
+                    TempData["Message"] = "Department created successfully!";
+                    await _activityService.AddActivity(new DashBoardActivityDto
+                    {
+                        LogLevel = "DEPCREATEINFO",
+                        Message = $"Department {departmentVM.Name} created successfully!",
+                        CreatedAt = DateTime.Now,
+                        Exception = departmentVM.Name
+                    });
+                    return RedirectToAction("Index");
+                }
+
+                await SaveLogToDb("DEPWarning", "Failed to create department: {@DepartmentVM}", departmentVM.ToString());
+
+                ModelState.AddModelError(string.Empty, "Failed to create department.");
+                return View(departmentVM);
+            }
+            catch (Exception ex)
+            {
+                await SaveLogToDb("DEPError", $"Error creating department: {departmentVM}", ex.Message);
+                return View("Error", "An error occurred while creating the department.");
+            }
+        }
+        #endregion
+
+        #region Details GET
+        [HttpGet]
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (!id.HasValue)
+                return BadRequest();
+
+            _logger.Information("Fetching details for department ID: {Id}", id);
+            var department = await _departmentService.GetDepartmentsByIdAsync(id.Value);
+
+            if (department == null || department.IsDeleted)
+            {
+                TempData["Error"] = "Error! The department was not found";
+
+                return RedirectToAction("Index");
+            }
+            else
+            {
+                return View(department);
+            }
+        }
+        #endregion
+
+        #region Edit GET
+        [HttpGet]
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (!id.HasValue)
+                return BadRequest();
+
+            try
+            {
+                _logger.Information("Fetching department for edit: ID {Id}", id);
+                var department = await _departmentService.GetDepartmentsByIdAsync(id.Value);
+                var departmentVm = _mapper.Map<DepartmentViewModel>(department);
+
+
+                if (department == null || department.IsDeleted)
+                {
+                    TempData["Error"] = "Error! The department was not found";
+
                     return RedirectToAction("Index");
                 }
                 else
                 {
-                    message = "Department is not created";
-                    TempData["Message"] = message;
-
-                    ModelState.AddModelError(string.Empty, message);
-                    return View(departmentVM);
+                    return View(departmentVm);
                 }
-
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, ex.Message);
-                if (_environment.IsDevelopment())
-                {
-                    message = ex.Message;
-                    return View(departmentVM);
-                }
-                else
-                {
-                    message = "An error occurred while creating the department";
-                    return View("Error", message);
-
-
-                }
-
+                _logger.Error(ex, "Error fetching department for edit: ID {Id}", id);
+                return RedirectToAction("Index");
             }
         }
         #endregion
 
-        #region Details
-        [HttpGet]
-        public IActionResult Details(int? id)
-        {
-            if (id is null)
-            {
-                return BadRequest();
-            }
-            var department = _departmentService.GetDepartmentsById(id.Value);
-            if (department is null)
-            {
-                return NotFound();
-            }
-            return View(department);
-
-        }
-        #endregion
-
-        #region Update
-        [HttpGet]
-        public IActionResult Edit(int? id)
-        {
-            if (id is null)
-            {
-                return BadRequest();
-            }
-            var department = _departmentService.GetDepartmentsById(id.Value);
-            if (department is null)
-            {
-                return NotFound();
-            }
-            return View(new DepartmentViewModel()
-            {
-                Code = department.Code,
-                CreationDate = department.CreationDate,
-                Description = department.Description,
-                Name = department.Name
-
-
-            });
-        }
-        
-
-        
+        #region Edit POST
         [HttpPost]
-        [ValidateAntiForgeryToken] //Action Filter
-
-        public IActionResult Edit(int id, DepartmentViewModel departmentViewModel)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(DepartmentViewModel departmentVM)
         {
             if (!ModelState.IsValid)
             {
-                return View(departmentViewModel);
+                await SaveLogToDb("DEPWarning", "Invalid model state for updating DepartmentViewModel: {@DepartmentVM}", departmentVM.ToString());
+                return View(departmentVM);
             }
-            var message = string.Empty;
+
             try
             {
-                var Result = _departmentService.UpdateDepartment(new DepartmentToUpdateDto()
+                var department = await _departmentService.GetDepartmentsByIdAsync(departmentVM.Id);
+
+                if (department == null || department.IsDeleted)
                 {
-                    Id = id,
-                    Code = departmentViewModel.Code,
-                    CreationDate = departmentViewModel.CreationDate,
-                    Description = departmentViewModel.Description,
-                    Name = departmentViewModel.Name
-                });
-                if (Result > 0)
-                {
-                    TempData["Message"] = "Congratolations! , Department is Updated";
+                    TempData["Error"] = "Error! The department was not found";
 
                     return RedirectToAction("Index");
                 }
-                else
+
+
+                var result = await _departmentService.UpdateDepartmentAsync(_mapper.Map<DepartmentToUpdateDto>(departmentVM));
+
+                if (result > 0)
                 {
-                    message = "Department is not updated Ya Man !";
-                    TempData["Message"]= message;
-                    ModelState.AddModelError(string.Empty, message);
-                    return View(departmentViewModel);
+                    await _activityService.AddActivity(new DashBoardActivityDto
+                    {
+                        LogLevel = "DEPEDITINFO",
+                        Message = $"Department {departmentVM.Name} updated successfully!",
+                        CreatedAt = DateTime.Now,
+                        Exception = departmentVM.Name
+                    });
+                    TempData["Message"] = "Department updated successfully!";
+                    return RedirectToAction("Index");
                 }
 
+                await SaveLogToDb("DEPWarning", "Failed to update department: {@DepartmentVM}", departmentVM.ToString());
+                ModelState.AddModelError(string.Empty, "Failed to update department.");
+                return View(departmentVM);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, ex.Message);
-                if (_environment.IsDevelopment())
-                {
-                    message = ex.Message;
-                    return View(departmentViewModel);
-                }
-                else
-                {
-                    message = "An error occurred while updating the department";
-                    return View("Error", message);
-
-                }
-
+                await SaveLogToDb("DEPError", $"Error updating department: {departmentVM}", ex.InnerException.Message);
+                return View("Error", "An error occurred while updating the department.");
             }
-
         }
         #endregion
 
-        #region Delete
+        #region Delete GET
         [HttpGet]
-        public IActionResult Delete(int? id)
+        public async Task<IActionResult> Delete(int? id)
         {
-            if (id is null)
+            if (!id.HasValue)
                 return BadRequest();
-            var department = _departmentService.GetDepartmentsById(id.Value);
-            if (department is null)
+
+            _logger.Information("Fetching department for deletion: ID {Id}", id);
+            var department = await _departmentService.GetDepartmentsByIdAsync(id.Value);
+            
+            if (department == null || department.IsDeleted)
             {
-                return NotFound();
+                TempData["Error"] = "Error! The department was not found";
+
+                return RedirectToAction("Index");
             }
-            return View(department);
-
-
-
+            else
+            {
+                return View(department);
+            }
         }
-        [HttpPost]
-        [ValidateAntiForgeryToken] //Action Filter
+        #endregion
 
-        public IActionResult Delete(int id)
+        #region Delete POST
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
         {
-            var message = string.Empty;
             try
             {
-                var Result = _departmentService.DeleteDepartment(id);
+                var department = await _departmentService.GetDepartmentsByIdAsync(id);
 
-                if (Result == true)
+                if (department == null || department.IsDeleted)
                 {
-                    TempData["Message"] = "Sure! , Department is Removed";
+                    TempData["Error"] = "Error! The department was not found";
+
                     return RedirectToAction("Index");
                 }
-                else
+                var result = await _departmentService.DeleteDepartmentAsync(id);
+                if (result)
                 {
-                    message = "Department is not deleted Ya Man!";
-                    ModelState.AddModelError(string.Empty, message);
-                    return View();
+                    await _activityService.AddActivity(new DashBoardActivityDto
+                    {
+                        LogLevel = "DEPDELETEINFO",
+                        Message = $"Department ID {id} deleted successfully!",
+                        CreatedAt = DateTime.Now,
+                        Exception = department.Name
+                    });
+                    TempData["Message"] = "Department deleted successfully!";
+                    return RedirectToAction("Index");
                 }
 
+                await SaveLogToDb("DEPWarning", "Failed to delete department: ID {Id}", id.ToString());
+                ModelState.AddModelError(string.Empty, "Failed to delete department.");
+                return View("Index");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, ex.Message);
-                if (_environment.IsDevelopment())
-                {
-                    message = ex.Message;
-                    return View();
-                }
-                else
-                {
-                    message = "An error occurred while deleting the department";
-                    return View("Error", message);
-
-                }
-
+                await SaveLogToDb("DEPError", $"Error deleting department: ID {id}", ex.Message);
+                return View("Error", "An error occurred while deleting the department.");
             }
-
         } 
         #endregion
 

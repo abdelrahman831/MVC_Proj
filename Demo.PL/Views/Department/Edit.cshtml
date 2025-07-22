@@ -3,6 +3,8 @@
 @{
     ViewData["Title"] = "Edit";
     ViewBag.Action = "Edit";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
 }
 
 <div class= "row justify-content-center align-content-center mt-3">
@@ -11,7 +13,14 @@
 
 </div>
 
+<script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
 
-@section ValidationScripts {
-    <partial name="_ValidationScriptsPartial" />
-}
+<script>
+    $(document).ready(function () {
+        $('form input, form select, form textarea').on('blur', function () {
+            $(this).valid();
+
+        });
+    });
+</script>

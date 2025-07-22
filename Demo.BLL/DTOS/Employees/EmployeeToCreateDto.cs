@@ -1,4 +1,5 @@
 ﻿using Demo.DAL.Entities.Common.Enums;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -35,6 +36,9 @@ namespace Demo.BLL.DTOS.Employees
         [Display(Name = "Department")]
         public int? DepartmentId { get; set; }
 
+        public string? ImagePath { get; set; }
+
+        public IFormFile? Image { get; set; }
 
 
 

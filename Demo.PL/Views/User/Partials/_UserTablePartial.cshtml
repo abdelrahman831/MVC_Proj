@@ -1,0 +1,15 @@
+﻿@model List<UsersViewModel>
+
+@foreach (var user in Model)
+{
+    <tr>
+        <td class="data-label" data-label="First Name">@user.FName</td>
+        <td class="data-label" data-label="Last Name">@user.LName</td>
+        <td class="data-label" data-label="Email">@user.Email</td>
+        <td class="data-label" data-label="Roles">@(user.Roles != null && user.Roles.Count > 0 ? string.Join(", ", user.Roles) : "No Role Assigned")</td>
+       
+
+
+        <partial name="_ButtonsPartial" model="user.Id" />
+    </tr>
+}

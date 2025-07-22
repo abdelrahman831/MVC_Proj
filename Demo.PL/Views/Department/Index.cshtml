@@ -1,6 +1,8 @@
 ﻿@model IEnumerable<DepartmentToReturnDto>
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Departments";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
     // View data ==> Enforce type - strongly type
     //View Bag ==> 4.0 Can not enforce type safety -weakly Type
     string? viewDataMsg = ViewData["Message"] as string;  // [compilation time]
@@ -17,80 +19,103 @@
 @if (!string.IsNullOrEmpty(TempData["Message"] as string))
 {
     <div aria-live="polite" aria-atomic="true" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050;">
-        <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="toast-header">
-                <img src="~/img/checkmark.png" class="rounded me-2" alt="Success Icon" width="20" height="20">
-                <strong class="me-auto text-primary">Success!!</strong>
-                <small class="text-body-secondary">@DateTime.Now.ToString("hh:mm tt")</small>
-                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        <div class="toast show bg-success text-white" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-success text-white">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <strong class="me-auto">Successo!</strong>
+                <small>@DateTime.Now.ToString("HH:mm")</small>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Chiudi"></button>
             </div>
-            <div class="toast-body align-items-center">
+            <div class="toast-body">
                 @TempData["Message"]
             </div>
         </div>
     </div>
-
 }
 
-<h1 class="my-4 w-50 mx-auto text-center fw-bold border-bottom pb-3">All Departments</h1>
-<br />
 
-<div class="d-flex justify-content-center mb-3">
-    <a class="btn btn-lg text-white px-4"
-       style="   background: linear-gradient(to right, #5c6bc0, #283593);"
-       asp-controller="Department" asp-action="Create">
-        <i class="bi bi-person-plus-fill"></i> Create New Department
+@if (!string.IsNullOrEmpty(TempData["Error"] as string))
+{
+    <div aria-live="polite" aria-atomic="true" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050;">
+        <div class="toast show bg-danger text-white" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-danger text-white">
+                <strong class="me-auto"><i class="bi bi-exclamation-triangle-fill"></i> Errore</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                <ul class="mb-2">
+
+                    <li>@TempData["Error"]</li>
+
+                </ul>
+                <div class="d-flex justify-content-end">
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="toast">Chiudi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="container mt-5">
+
+
+    <h1 class="w-50 mx-auto text-center fw-bold border-bottom pb-1">All Departments</h1>
+
+    <div class="container">
+        <form class="row justify-content-center align-items-center" asp-action="SearchDepartment" onkeydown="if(event.keyCode === 13) {
+               
+                return false;}">
+            <div class="col-md-6">
+                <div class="input-group shadow rounded-pill">
+                    <input class="form-control border-0 rounded-pill px-3"
+                           type="text"
+                           id="searchInput"
+                           placeholder="🔍 Search By Department..."
+                           aria-label="Search"
+                           style="height: 50px; font-size: 1.1rem;" />
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="d-flex justify-content-center">
+    <a asp-controller="Department" asp-action="Create"
+       class="text-decoration-none"
+       style="font-size: 3rem; color: #5c6bc0; transition: transform 0.2s ease, color 0.2s ease;">
+        <i class="fa-solid fa-square-plus"></i>
     </a>
 </div>
 
+
 @if (Model.Count() > 0)
 {
-    <table class="table table-striped table-hover mt-3">
-        <thead class=" text-center">
+    <div class="table-wrapper">
+        <table class="fl-table">
+            <thead>
+
             <tr>
                 <th>@Html.DisplayNameFor(d => d.Code)</th>
                 @* <th>Code</th> *@
                 <th>@Html.DisplayNameFor(d => d.Name)</th>
                 @*  <th>Name</th> *@
                 <th>Creation Date</th>
-                <th>Details</th>
-                <th>Update</th>
-                <th>Delete</th>
+                <th>Actions</th>
+
+
 
             </tr>
 
         </thead>
-        <tbody class=" text-center">
+            <tbody class=" text-center" id="deptTableBody">
             @foreach (var department in Model)
             {
                 <tr>
-                    <td>@department.Code</td>
-                    <td>@department.Name</td>
-                    <td>@department.CreationDate</td>
-                    <partial name="_ButtonsPartial" model="@department.Id" />
+                        <td class="data-label" data-label="Dept Code">@department.Code</td>
+                        <td class="data-label" data-label="Dept Name">@department.Name</td>
+                        <td class="data-label" data-label="Dept CodeCreation Date">@department.CreationDate</td>
+                    <partial name="_ButtonsPartial" model="@department.Id.ToString()" />
                 </tr>
-                <!-- Button trigger modal -->
-                <!-- Modal -->
-                <div class="modal fade" id="deleteModal-@department.Id" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h1 class="modal-title fs-5" id="exampleModalLabel">Delete Operation</h1>
-
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                Are you sure you want to delete the department @department.Name?
-                            </div>
-                            <div class="modal-footer">
-                                <form asp-action="Delete" asp-route-id="@department.Id" class="mt-4">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                    <input type="submit" value="Delete" class="btn btn-danger" />
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
 
             }
@@ -98,6 +123,10 @@
 
 
     </table>
+    </div>
+
+
+
 }
 else
 {
@@ -110,5 +139,81 @@ else
 
 }
 
+@foreach (var department in Model)
+{
+    <div class="modal fade" id="deleteModal-@department.Id" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="exampleModalLabel">Delete Operation</h1>
 
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete the department @department.Name?
+                </div>
+                <div class="modal-footer">
+                    <form asp-action="Delete" asp-route-id="@department.Id.ToString()" class="mt-4">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <input type="submit" value="Delete" class="btn btn-danger" />
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script type="text/javascript">
+      $(document).ready(function () {
+        let searchTimeout;
+
+        function fetchEmployees(searchValue = "") {
+            $.ajax({
+                url: "/Department/SearchDepartments", // Controlla che il percorso sia corretto
+                type: "GET",
+                data: { searchValue: searchValue },
+                success: function (response) {
+                    let tbody = $("#deptTableBody");
+                    tbody.empty();
+
+                    if (response.trim() !== "") {
+                        tbody.html(response); // Carica direttamente l'HTML con i _ButtonsPartial già renderizzati lato server
+                    } else {
+                        tbody.append('<tr><td colspan="10" class="text-center">No Department Found!</td></tr>');
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error("AJAX Error:", error);
+                }
+            });
+        }
+
+        $("#searchInput").on("input", function () {
+            clearTimeout(searchTimeout);
+
+            let searchValue = $(this).val().trim();
+
+            if (searchValue.length < 3 && searchValue.length > 0) {
+                $("#deptTableBody").html('<tr><td colspan="10" class="text-center">Type at least 3 characters...</td></tr>');
+                return;
+            }
+
+            searchTimeout = setTimeout(function () {
+                fetchEmployees(searchValue);
+            }, 500);
+        });
+
+        // Se il campo di ricerca è vuoto, mostra tutti gli employee
+        $("#searchInput").on("keyup", function () {
+            if ($(this).val().trim() === "") {
+                fetchEmployees();
+            }
+        });
+
+        // Carica tutti gli employee all'inizio
+        fetchEmployees();
+    });
+
+</script>

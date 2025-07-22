@@ -13,160 +13,225 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Serilog;
+using Demo.DAL.Presistance.UnitOfWork;
+using Demo.BLL.Services.Attacments;
+using Microsoft.AspNetCore.Hosting;
+
+// Aggiungi questa using
+
 
 namespace Demo.BLL.Services.Employees
 {
     public class EmployeeService : IEmployeeService
     {
 
-        public IEmployeeRepository _employeeRepository;
-        public IMapper _mapper;
-        public ILogger<EmployeeService> _logger;
-
-        public EmployeeService(ILogger<EmployeeService> logger,IEmployeeRepository employeeRepository,IMapper mapper) //Ask Clr to Create instance
+        private readonly IAttacchmentService _attachmentService;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IMapper _mapper;
+        private readonly ILogger<EmployeeService> _logger;
+        private readonly IWebHostEnvironment _env;
+        public EmployeeService(ILogger<EmployeeService> logger,IMapper mapper,IUnitOfWork unitOfWork,IAttacchmentService attacchmentService, IWebHostEnvironment env) //Ask Clr to Create instance
         {
-            _employeeRepository = employeeRepository;
+    
             _mapper = mapper;
             _logger = logger;
+            _unitOfWork = unitOfWork;
+            _attachmentService = attacchmentService;
+            _env = env;
         }
 
         #region Create
-        public int CreateEmployee(EmployeeToCreateDto employeeCreateDto)
+        public async Task<int> CreateEmployeeAsync(EmployeeToCreateDto employeeCreateDto)
         {
             try
             {
-                //Log.Information("DTO ricevuto: {@Dto}", employeeCreateDto);
-                //var employeet = _mapper.Map<Employee>(employeeCreateDto);
-                //Log.Information("Entità mappata: {@Employee}", employeet);
+                _logger.LogInformation("Ricevuto DTO: {@Dto}", employeeCreateDto);
 
-            
-            Employee employee = new Employee()
-            {
-                Name = employeeCreateDto.Name,
-                Age = employeeCreateDto.Age,
-                Address = employeeCreateDto.Address,
-                Salary = employeeCreateDto.Salary,
-                PhoneNumber = employeeCreateDto.PhoneNumber,
-                IsActive = employeeCreateDto.IsActive,
-                Email = employeeCreateDto.Email,
-                HiringDate = employeeCreateDto.HiringDate,
-                Gender = employeeCreateDto.Gender,
-                EmployeeType = employeeCreateDto.EmployeeType,
-                CreatedBy = 1,
-                LastModifiedBy = 1,
-                LastModifiedOn = DateTime.UtcNow,
-                DepartmentId = employeeCreateDto.DepartmentId
-            };
+                // Se c'è un file, lo salviamo prima
+                if (employeeCreateDto.Image != null)
+                {
+                    _logger.LogInformation("Trovato file: {FileName}, Dimensione: {Size} bytes",
+                        employeeCreateDto.Image.FileName, employeeCreateDto.Image.Length);
 
-            //employee.CreatedBy = 1;
-            //employee.LastModifiedBy = 1;
-            //employee.LastModifiedOn = DateTime.UtcNow;
+                    var fileName = await _attachmentService.Upload(employeeCreateDto.Image, "Images");
 
-            return _employeeRepository.AddT(employee);  //Number of rows affected
+                    if (!string.IsNullOrEmpty(fileName))
+                    {
+                        _logger.LogInformation("File salvato con nome: {FileName}", fileName);
+                        employeeCreateDto.ImagePath = fileName; // Assegniamo il nome del file
+                    }
+                    else
+                    {
+                        _logger.LogError("Errore durante il salvataggio dell'immagine.");
+                        return 0; // Fallisce il salvataggio
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("Nessun file ricevuto per l'upload.");
+                }
+
+                // Ora possiamo mappare l'oggetto
+                var employee = _mapper.Map<Employee>(employeeCreateDto);
+
+                 _unitOfWork.EmployeeRepository.AddTAsync(employee);
+                int result = await _unitOfWork.CompleteAsync();
+
+                _logger.LogInformation("Dipendente salvato: {Employee}", JsonConvert.SerializeObject(employee));
+
+                return result;
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Message);
+                _logger.LogError(ex, "Errore durante la creazione del dipendente.");
                 throw;
             }
         }
 
+
         #endregion
 
         #region Delete
-        public bool DeleteEmployee(int id)
+        public async Task<bool> DeleteEmployeeAsync(int id)
         {
-            var employee = _employeeRepository.GetById(id);
+            var employee =  await _unitOfWork.EmployeeRepository.GetByIdAsync(id);
             if (employee is not null)
-
-                return _employeeRepository.DeleteT(employee) > 0;  //Number of rows affected >0 return true
-            return false;
+                 _unitOfWork.EmployeeRepository.DeleteTAsync(employee);
+            return await _unitOfWork.CompleteAsync() >0;
 
         }
         #endregion
 
         #region Index
-        public IEnumerable<EmployeeToReturnDto> GetAllEmployees()
+        public async Task<IEnumerable<EmployeeToReturnDto>> GetAllEmployeesAsync()
         {
-           return _employeeRepository.GetAllQuarable().Include(E => E.Department)
-                .Where(E => !E.IsDeleted)
-                .Select(employee => new EmployeeToReturnDto
-            {
-                Id = employee.Id,
-                Name = employee.Name,
-                Age = employee.Age,
-                Salary = employee.Salary,
-                IsActive = employee.IsActive,
-                Email = employee.Email,
-                Gender = employee.Gender.ToString(),
-                EmployeeType = employee.EmployeeType.ToString(),
-                Department=employee.Department.Name  //Use Lazy loading
+            var query =  _unitOfWork.EmployeeRepository.GetAllQuarableAsync(); // Attendi il Task
 
-            });
+            var employees = await query
+                .Include(e => e.Department)
+                .Where(e => !e.IsDeleted)
+                .Select(employee => _mapper.Map<EmployeeToReturnDto>(employee))
+                .ToListAsync(); // Esegui la query
 
+            return employees;
+        }
 
-            //var employees = query.ToList();
-            //var count = query.Count();
-            //var firstEmployee = query.FirstOrDefault();
-            //return query;
-        } 
         #endregion
 
         #region Details
-        public EmployeeDetailsDto? GetEmployeesById(int id)
+        public async Task<EmployeeDetailsDto?> GetEmployeesByIdAsync(int id)
         {
-            var employee = _employeeRepository.GetById(id);
+            var employee =  await _unitOfWork.EmployeeRepository.GetByIdAsync(id);  
             if (employee is not null)
             {
-                return new EmployeeDetailsDto
-                {
-                    Id = employee.Id,
-                    Name = employee.Name,
-                    Age = employee.Age,
-                    Salary = employee.Salary,
-                    IsActive = employee.IsActive,
-                    Email = employee.Email,
-                    PhoneNumber = employee.PhoneNumber,
-                    Address = employee.Address,
-                    HiringDate = employee.HiringDate,
-                    Gender = employee.Gender.ToString(),
-                    EmployeeType = employee.EmployeeType.ToString(),
-                    CreatedBy = employee.CreatedBy,
-                    CreatedOn = employee.CreatedOn,
-                    LastModifiedBy = employee.LastModifiedBy,
-                    
-                    DepartmentId=employee.DepartmentId// Lazy
-                };
+                return _mapper.Map<EmployeeDetailsDto>(employee);
+      
 
             }
             return null!;
         }
         #endregion
 
-        #region Update
-        public int UpdateEmployee(EmployeeToUpdateDto employeeUpdateDto)
-        {
+        //#region Update
+        //public async Task<int> UpdateEmployeeAsync(EmployeeToUpdateDto employeeUpdateDto)
+        //{
+        //    try
+        //    {
+        //        // Recupera il dipendente esistente dal repository
+        //        var employee = await  _unitOfWork.EmployeeRepository.GetByIdAsync(employeeUpdateDto.Id);
+        //        if (employee == null)
+        //        {
+        //            _logger.LogWarning("Dipendente con ID {Id} non trovato.", employeeUpdateDto.Id);
+        //            return 0; // Nessun aggiornamento effettuato
+        //        }
 
-            Employee employee = new Employee()
+        //        // Se è stata caricata una nuova immagine, aggiorna l'immagine
+        //        if (employeeUpdateDto.Image != null)
+        //        {
+        //            _logger.LogInformation("Nuova immagine caricata: {FileName}", employeeUpdateDto.Image.FileName);
+
+        //            // Elimina l'immagine precedente, se esiste
+        //            if (!string.IsNullOrEmpty(employee.ImagePath))
+        //            {
+        //                var oldFilePath = Path.Combine(_env.WebRootPath, "Files", "Images", employee.ImagePath);
+        //                if (File.Exists(oldFilePath))
+        //                {
+        //                    File.Delete(oldFilePath);
+        //                    _logger.LogInformation("Immagine precedente eliminata: {OldFilePath}", oldFilePath);
+        //                }
+        //            }
+
+        //            // Salva la nuova immagine e aggiorna il campo ImagePath
+        //            var newFileName = _attachmentService.Upload(employeeUpdateDto.Image, "Images");
+        //            if (!string.IsNullOrEmpty(newFileName))
+        //            {
+        //                employee.ImagePath = newFileName; // Aggiorna il nome dell'immagine nel database
+        //                _logger.LogInformation("Immagine aggiornata con successo: {NewFileName}", newFileName);
+        //            }
+        //        }
+
+        //        // Mappa gli altri campi del DTO nell'entità esistente (ma non l'immagine, che è già stata aggiornata)
+        //        _mapper.Map(employeeUpdateDto, employee); // Ignora tutti i membri non esplicitamente mappati
+
+        //        // Aggiorna il dipendente nel repository
+        //         _unitOfWork.EmployeeRepository.UpdateTAsync(employee);
+        //        return await _unitOfWork.CompleteAsync();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Errore durante l'aggiornamento del dipendente.");
+        //        throw;
+        //    }
+        //}
+
+        //#endregion
+
+        #region Update
+        public async Task<int> UpdateEmployeeAsync(EmployeeToUpdateDto employeeUpdateDto)
+        {
+            try
             {
-                Id = employeeUpdateDto.Id,
-                Name = employeeUpdateDto.Name,
-                Age = employeeUpdateDto.Age,
-                Address = employeeUpdateDto.Address,
-                Salary = employeeUpdateDto.Salary,
-                PhoneNumber = employeeUpdateDto.PhoneNumber,
-                IsActive = employeeUpdateDto.IsActive,
-                Email = employeeUpdateDto.Email,
-                HiringDate = employeeUpdateDto.HiringDate,
-                Gender = employeeUpdateDto.Gender,
-                EmployeeType = employeeUpdateDto.EmployeeType,
-                CreatedBy = 1,
-                LastModifiedBy = 1,
-                LastModifiedOn = DateTime.UtcNow,
-                DepartmentId = employeeUpdateDto.DepartmentId 
-            };
-            return _employeeRepository.UpdateT(employee);
+
+                var employee = await _unitOfWork.EmployeeRepository.GetByIdAsync(employeeUpdateDto.Id);
+                if (employee == null)
+                {
+
+                    return 0;
+                }
+
+
+                if (employeeUpdateDto.Image != null)
+                {
+
+
+                    if (!string.IsNullOrEmpty(employee.ImagePath))
+                    {
+                        var oldFilePath = Path.Combine(_env.WebRootPath, "Files", "Images", employee.ImagePath);
+                        if (File.Exists(oldFilePath))
+                        {
+                            File.Delete(oldFilePath);
+                        }
+                    }
+
+                    var newFileName = await _attachmentService.Upload(employeeUpdateDto.Image, "Images");
+                    if (!string.IsNullOrEmpty(newFileName))
+                    {
+                        employee.ImagePath = newFileName;
+                    }
+                }
+
+                _mapper.Map(employeeUpdateDto, employee);
+
+
+                _unitOfWork.EmployeeRepository.UpdateTAsync(employee);
+                return await _unitOfWork.CompleteAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message, ex);
+            }
         }
+
         #endregion
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Demo.DAL.Entities.Common.Enums;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -17,8 +18,7 @@ namespace Demo.BLL.DTOS.Employees
         public string Name { get; set; } = null!;
         [Range(20, 60)]
         public int? Age { get; set; }
-        [RegularExpression(@"^[0-9]{1,3}-[a-zA-Z]{5,10}-[a-zA-Z]{4,10}-[a-zA-Z]{5,10}$",
-                      ErrorMessage = "Invalid Address Format , You should like 123-street-city-country")]
+        //[RegularExpression(@"^[0-9]{1,3}-[a-zA-Z]{5,10}-[a-zA-Z]{4,10}-[a-zA-Z]{5,10}$",ErrorMessage = "Invalid Address Format , You should like 123-street-city-country")]
 
         public string? Address { get; set; }
         [DataType(DataType.Currency)]
@@ -36,6 +36,7 @@ namespace Demo.BLL.DTOS.Employees
         public EmployeeType EmployeeType { get; set; }
         [Display(Name = "Department")]
         public int? DepartmentId { get; set; }
-
+        public IFormFile? Image { get; set; }
+        public string? ImagePath { get; set; }
     }
 }

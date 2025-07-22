@@ -1,0 +1,127 @@
+﻿@model LoginViewModel
+@{
+    Layout = "_AuthLayout";
+    ViewData["Title"] = "Login";
+
+}
+
+
+<style>
+    .form-style.is-invalid {
+        border: 2px solid red;
+    }
+
+    .error-icon {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: red;
+        display: none; /* Nascosta di default */
+    }
+</style>
+
+<div class="card-front">
+    <div class="center-wrap">
+        <div class="section text-center">
+            <h4 class="mb-4 pb-3">Log In</h4>
+ 
+      @*       <div id="g_id_onload"
+                 data-client_id="779795901287-o7khjtcj0d7014b99mf4v8e3327rfbge.apps.googleusercontent.com"
+                 data-login_uri="https://localhost:44358/signin-google"
+                 data-auto_select="true">
+            </div> *@
+            <br />
+            <form asp-action="Login" id="loginForm">
+                <div asp-validation-summary="All" class="d-none"></div>
+
+                <div class="form-group position-relative">
+                    <input asp-for="UserName" type="text" class="form-style" placeholder="Your Email" id="logemail" autocomplete="on">
+                    <i class="fas fa-exclamation-circle error-icon"></i>
+                    <span asp-validation-for="UserName" class="error-icon" class="d-none"></span>
+                </div>
+
+                <div class="form-group mt-2 position-relative">
+                    <input type="password" asp-for="Password" class="form-style" placeholder="Your Password" id="logpass" autocomplete="on">
+                    <i class="fas fa-exclamation-circle error-icon"></i>
+                    <span class="error-icon" asp-validation-for="Password"></span>
+                </div>
+
+                <button type="submit" class="btn mt-4">Login</button>
+                <p class="mb-0 mt-4 text-center">Don't have an account? <a asp-action="Register" class="link">SingUp</a></p>
+
+                <p class="mb-0 mt-4 text-center"><a asp-action="ForgetPassword" class="link">Forgot your password?</a></p>
+                <br />
+                <a asp-action="GoogleLogin" class="login-with-google-btn" >
+                    Sign in with Google
+                </a>
+
+
+                <!-- Carica lo script Google Identity Services -->
+    
+
+
+
+
+
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        console.log("Tooltip validation initialized for Login");
+
+        function activateTooltips() {
+            document.querySelectorAll(".form-style").forEach(function (input) {
+                let validationMessage = document.querySelector(`span[data-valmsg-for="${input.name}"]`);
+                let errorIcon = input.nextElementSibling;
+                let errorText = validationMessage ? validationMessage.innerText.trim() : "";
+
+                if (errorText !== "") {
+                    console.log(`Errore rilevato in ${input.name}: ${errorText}`);
+                    input.classList.add("is-invalid");
+                    errorIcon.style.display = "inline";
+                    errorIcon.setAttribute("data-bs-toggle", "tooltip");
+                    errorIcon.setAttribute("title", errorText);
+
+                    new bootstrap.Tooltip(errorIcon);
+                } else {
+                    removeError(input);
+                }
+            });
+        }
+
+        function removeError(input) {
+            let errorIcon = input.nextElementSibling;
+
+            input.classList.remove("is-invalid");
+            errorIcon.style.display = "none";
+            errorIcon.removeAttribute("data-bs-toggle");
+            errorIcon.removeAttribute("title");
+
+            let tooltipInstance = bootstrap.Tooltip.getInstance(errorIcon);
+            if (tooltipInstance) tooltipInstance.dispose();
+        }
+
+        // Evento per validazione in tempo reale
+        document.querySelectorAll(".form-style").forEach(function (input) {
+            input.addEventListener("input", function () {
+                $(this).valid();
+                setTimeout(() => activateTooltips(), 100);
+            });
+
+            input.addEventListener("blur", activateTooltips);
+        });
+
+        // Controllo la validazione dopo il submit
+        document.getElementById("loginForm").addEventListener("submit", function (event) {
+            setTimeout(activateTooltips, 100);
+        });
+    });
+</script>
+
+@section ValidationScripts {
+    <partial name="_ValidationScriptsPartial" />
+}

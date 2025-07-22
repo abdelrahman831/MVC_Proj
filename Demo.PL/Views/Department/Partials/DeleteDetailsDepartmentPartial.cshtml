@@ -4,9 +4,13 @@
     <li class="nav-item" role="presentation">
         <a class="nav-link active" id="general-tab" data-bs-toggle="tab" href="#general" role="tab" aria-controls="general" style="color: black;">General</a>
     </li>
-    <li class="nav-item" role="presentation">
-        <a class="nav-link" id="administration-tab" data-bs-toggle="tab" href="#administration" role="tab" aria-controls="administration" style="color: black;">Administration</a>
-    </li>
+    @if (User.IsInRole("Admin"))
+
+    {
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" id="administration-tab" data-bs-toggle="tab" href="#administration" role="tab" aria-controls="administration" style="color: black;">Administration</a>
+        </li>
+    }
 </ul>
 <div class="tab-content" id="myTabContent">
     <!-- General Tab -->
@@ -30,10 +34,14 @@
             </div>
         </div>
     </div>
+    @if (User.IsInRole("Admin"))
 
-    <!-- Administration Tab Content -->
-    <div class="tab-pane fade p-4 border" id="administration" role="tabpanel" aria-labelledby="administration-tab">
-        <div class="row">
+
+
+    {
+        <!-- Administration Tab Content -->
+        <div class="tab-pane fade p-4 border" id="administration" role="tabpanel" aria-labelledby="administration-tab">
+            <div class="row">
             <div class="form-group col-12">
                 <label class="col-form-label" asp-for="CreatedBy"></label>
                 <input asp-for="CreatedBy" class="form-control" readonly />
@@ -52,6 +60,7 @@
             </div>
         </div>
     </div>
+    }
 </div>
 
 @if (ViewData["Title"] as string == "Delete")
